@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "157913248379",
+    "project_id": "lovelyhub-18e18",
+    "storage_bucket": "lovelyhub-18e18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157913248379:android:c5e6e6193e7942b9d328de",
+        "android_client_info": {
+          "package_name": "com.example.lovelyhub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtCUNTuaRULMoD85EOydwbPQQvcVsMuso"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -29,9 +29,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(
+    onSplashFinished: () -> Unit
+) {
     var progress by remember { mutableFloatStateOf(0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -41,6 +44,8 @@ fun SplashScreen() {
 
     LaunchedEffect(Unit) {
         progress = 1f
+        delay(2000)
+        onSplashFinished()
     }
 
     Surface(

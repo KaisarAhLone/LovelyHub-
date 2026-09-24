@@ -100,6 +100,26 @@ class AuthViewModel(
         }
     }
 
+    fun updateUserProfile(
+        name: String,
+        email: String,
+        role: String,
+        photoUrl: String,
+        onResult: (String?) -> Unit
+    ) {
+        val uid = repository.currentUser?.uid ?: return onResult("User not logged in")
+        viewModelScope.launch {
+            repository.updateUserProfile(uid, name.trim(), email.trim(), role, photoUrl)
+                .onSuccess {
+                    loadUserProfile(uid)
+                    onResult(null)
+                }
+                .onFailure { error ->
+                    onResult(error.localizedMessage ?: "Failed to update profile")
+                }
+        }
+    }
+
     fun resetPassword(email: String, onComplete: (String?) -> Unit) {
         if (email.isBlank()) {
             onComplete("Please enter your email address")

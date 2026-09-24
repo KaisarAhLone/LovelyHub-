@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -49,7 +47,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lovelyhub.ui.auth.AuthViewModel
+import com.example.lovelyhub.ui.profile.ProfileScreen
 
 data class HomeCategoryItem(
     val title: String,
@@ -78,8 +76,6 @@ fun HomeScreen(
     viewModel: AuthViewModel,
     onSignOut: () -> Unit
 ) {
-    val userProfile by viewModel.currentUserProfile.collectAsState()
-    val currentUser = viewModel.currentUser
     var searchQuery by remember { mutableStateOf("") }
     var selectedBottomNavIndex by remember { mutableStateOf(0) }
 
@@ -99,37 +95,39 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "LOVELY HUB",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp,
-                            color = Color(0xFF1E1E2D),
-                            letterSpacing = 1.sp
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        viewModel.signOut()
-                        onSignOut()
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Sign Out",
-                            tint = Color(0xFF7926E1)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+            if (selectedBottomNavIndex != 4) {
+                TopAppBar(
+                    title = {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "LOVELY HUB",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp,
+                                color = Color(0xFF1E1E2D),
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            viewModel.signOut()
+                            onSignOut()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Sign Out",
+                                tint = Color(0xFF7926E1)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    )
                 )
-            )
+            }
         },
         bottomBar = {
             NavigationBar(
@@ -166,66 +164,76 @@ fun HomeScreen(
                 .padding(innerPadding),
             color = Color.White
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search anything...", fontSize = 15.sp, color = Color.Gray) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                    trailingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color(0xFFFAFAFA),
-                        focusedContainerColor = Color.White,
-                        focusedBorderColor = Color(0xFF1E1E2D),
-                        unfocusedBorderColor = Color(0xFFBDBDBD)
+            when (selectedBottomNavIndex) {
+                4 -> {
+                    ProfileScreen(
+                        viewModel = viewModel,
+                        onSignOut = onSignOut
                     )
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(categories) { category ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.clickable { }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(86.dp)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(category.bgColor)
-                                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(18.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = category.icon,
-                                    contentDescription = category.title,
-                                    tint = category.iconColor,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = category.title,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF212121),
-                                textAlign = TextAlign.Center
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Search anything...", fontSize = 15.sp, color = Color.Gray) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                            trailingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFFAFAFA),
+                                focusedContainerColor = Color.White,
+                                focusedBorderColor = Color(0xFF1E1E2D),
+                                unfocusedBorderColor = Color(0xFFBDBDBD)
                             )
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(categories) { category ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.clickable { }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(86.dp)
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(category.bgColor)
+                                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(18.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = category.icon,
+                                            contentDescription = category.title,
+                                            tint = category.iconColor,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = category.title,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF212121),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
                         }
                     }
                 }

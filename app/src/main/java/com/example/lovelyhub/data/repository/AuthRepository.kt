@@ -113,6 +113,33 @@ class AuthRepository(
         }
     }
 
+    suspend fun updateUserProfile(
+        uid: String,
+        name: String,
+        email: String,
+        role: String,
+        photoUrl: String
+    ): Result<Unit> {
+        return try {
+            val updates = mapOf(
+                "name" to name,
+                "email" to email,
+                "role" to role,
+                "photoUrl" to photoUrl
+            )
+            firestore.collection("users").document(uid).update(updates).await()
+
+            val user = auth.currentUser
+            if (user != null && email.isNotBlank() && email != user.email) {
+                user.verifyBeforeUpdateEmail(email).await()
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun resetPassword(email: String): Result<Unit> {
         return try {
             auth.sendPasswordResetEmail(email).await()

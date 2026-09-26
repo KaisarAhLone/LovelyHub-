@@ -1,5 +1,6 @@
 package com.example.lovelyhub.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -60,7 +61,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.ui.auth.AuthViewModel
+import com.example.lovelyhub.ui.listings.AddListingScreen
+import com.example.lovelyhub.ui.listings.ListingDetailScreen
+import com.example.lovelyhub.ui.listings.ListingListScreen
+import com.example.lovelyhub.ui.listings.ListingViewModel
 import com.example.lovelyhub.ui.profile.ProfileScreen
 
 data class HomeCategoryItem(
@@ -74,10 +81,27 @@ data class HomeCategoryItem(
 @Composable
 fun HomeScreen(
     viewModel: AuthViewModel,
+    listingViewModel: ListingViewModel = viewModel(),
     onSignOut: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedBottomNavIndex by remember { mutableStateOf(0) }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedListingDetail by remember { mutableStateOf<Listing?>(null) }
+
+    BackHandler(enabled = selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+        when {
+            selectedListingDetail != null -> {
+                selectedListingDetail = null
+            }
+            selectedCategory != null -> {
+                selectedCategory = null
+            }
+            selectedBottomNavIndex != 0 -> {
+                selectedBottomNavIndex = 0
+            }
+        }
+    }
 
     val categories = remember {
         listOf(
@@ -95,7 +119,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            if (selectedBottomNavIndex != 4) {
+            if (selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
                 TopAppBar(
                     title = {
                         Box(
@@ -123,9 +147,7 @@ fun HomeScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
-                    )
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
                 )
             }
         },
@@ -144,8 +166,12 @@ fun HomeScreen(
 
                 navItems.forEachIndexed { index, (label, icon) ->
                     NavigationBarItem(
-                        selected = selectedBottomNavIndex == index,
-                        onClick = { selectedBottomNavIndex = index },
+                        selected = selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null,
+                        onClick = {
+                            selectedBottomNavIndex = index
+                            selectedCategory = null
+                            selectedListingDetail = null
+                        },
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
@@ -164,8 +190,35 @@ fun HomeScreen(
                 .padding(innerPadding),
             color = Color.White
         ) {
-            when (selectedBottomNavIndex) {
-                4 -> {
+            when {
+                selectedListingDetail != null -> {
+                    ListingDetailScreen(
+                        listing = selectedListingDetail!!,
+                        onBackClick = { selectedListingDetail = null }
+                    )
+                }
+                selectedCategory != null -> {
+                    ListingListScreen(
+                        category = selectedCategory!!,
+                        viewModel = listingViewModel,
+                        onBackClick = { selectedCategory = null },
+                        onListingClick = { listing -> selectedListingDetail = listing },
+                        onAddListingClick = {
+                            selectedCategory = null
+                            selectedBottomNavIndex = 2
+                        }
+                    )
+                }
+                selectedBottomNavIndex == 2 -> {
+                    AddListingScreen(
+                        viewModel = listingViewModel,
+                        onSuccess = { postedCategory ->
+                            selectedCategory = postedCategory
+                            selectedBottomNavIndex = 0
+                        }
+                    )
+                }
+                selectedBottomNavIndex == 4 -> {
                     ProfileScreen(
                         viewModel = viewModel,
                         onSignOut = onSignOut
@@ -205,7 +258,9 @@ fun HomeScreen(
                             items(categories) { category ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.clickable { }
+                                    modifier = Modifier.clickable {
+                                        selectedCategory = category.title
+                                    }
                                 ) {
                                     Box(
                                         modifier = Modifier

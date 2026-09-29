@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,11 +25,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,13 +42,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,41 +61,58 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.data.model.UserRole
 import com.example.lovelyhub.ui.auth.AuthViewModel
+import com.example.lovelyhub.ui.components.ListingImage
+import com.example.lovelyhub.ui.listings.ListingViewModel
 import kotlinx.coroutines.launch
-
-data class OrderItem(
-    val id: String,
-    val title: String,
-    val category: String,
-    val date: String,
-    val price: String,
-    val status: String,
-    val statusColor: Color
-)
 
 @Composable
 fun ProfileScreen(
     viewModel: AuthViewModel,
+    listingViewModel: ListingViewModel = viewModel(),
     onSignOut: () -> Unit
 ) {
+    val context = LocalContext.current
     val userProfile by viewModel.currentUserProfile.collectAsState()
     val currentUser = viewModel.currentUser
+    val userListings by listingViewModel.userListings.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var showEditDialog by remember { mutableStateOf(false) }
+    var showEditProfileDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
     var editEmail by remember { mutableStateOf("") }
     var editRole by remember { mutableStateOf(UserRole.STUDENT) }
     var isRoleExpanded by remember { mutableStateOf(false) }
 
+    var itemToEdit by remember { mutableStateOf<Listing?>(null) }
+    var editItemTitle by remember { mutableStateOf("") }
+    var editItemPrice by remember { mutableStateOf("") }
+    var editItemPhone by remember { mutableStateOf("") }
+    var editItemImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    var itemToDelete by remember { mutableStateOf<Listing?>(null) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val editItemImagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            editItemImageUri = uri
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        listingViewModel.fetchUserListings()
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -116,14 +132,6 @@ fun ProfileScreen(
                 }
             }
         }
-    }
-
-    val sampleOrders = remember {
-        listOf(
-            OrderItem("ORD-101", "Burger Combo & Fries", "Food & Dining", "21 Sep 2026", "₹240", "Delivered", Color(0xFF4CAF50)),
-            OrderItem("PG-204", "Single Room Booking", "Rooms / PG", "18 Sep 2026", "₹4,500", "Confirmed", Color(0xFF2196F3)),
-            OrderItem("RENT-88", "Honda Activa 24h", "Rentals", "12 Sep 2026", "₹350", "Completed", Color(0xFF9C27B0))
-        )
     }
 
     val currentPhotoUrl = selectedImageUri?.toString()
@@ -238,7 +246,7 @@ fun ProfileScreen(
                                 editName = userProfile?.name ?: currentUser?.displayName ?: ""
                                 editEmail = userProfile?.email ?: currentUser?.email ?: ""
                                 editRole = UserRole.entries.find { it.displayName == userProfile?.role } ?: UserRole.STUDENT
-                                showEditDialog = true
+                                showEditProfileDialog = true
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1)),
                             shape = RoundedCornerShape(12.dp),
@@ -254,7 +262,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "My Orders & Bookings",
+                    text = "My Uploaded Items",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E1E2D)
@@ -269,69 +277,84 @@ fun ProfileScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        sampleOrders.forEachIndexed { index, order ->
-                            Row(
+                        if (userListings.isEmpty()) {
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
+                                Text(
+                                    text = "You haven't uploaded any items yet.",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        } else {
+                            userListings.forEachIndexed { index, listing ->
+                                Row(
                                     modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(order.statusColor.copy(alpha = 0.12f)),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                                        contentDescription = null,
-                                        tint = order.statusColor,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                                    if (listing.imageUrl.isNotBlank()) {
+                                        ListingImage(
+                                            imageUrl = listing.imageUrl,
+                                            contentDescription = listing.title,
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                    }
 
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = order.title,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = Color(0xFF1E1E2D)
-                                    )
-                                    Text(
-                                        text = "${order.category} • ${order.date}",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                }
-
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = order.price,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = Color(0xFF7926E1)
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(order.statusColor.copy(alpha = 0.12f))
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = order.status,
-                                            fontSize = 10.sp,
+                                            text = listing.title,
                                             fontWeight = FontWeight.Bold,
-                                            color = order.statusColor
+                                            fontSize = 15.sp,
+                                            color = Color(0xFF1E1E2D)
+                                        )
+                                        Text(
+                                            text = "${listing.category} • ${listing.price}",
+                                            fontSize = 13.sp,
+                                            color = Color(0xFF7926E1),
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
-                                }
-                            }
 
-                            if (index < sampleOrders.size - 1) {
-                                HorizontalDivider(color = Color(0xFFF0F0F0))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(onClick = {
+                                            itemToEdit = listing
+                                            editItemTitle = listing.title
+                                            editItemPrice = listing.price
+                                            editItemPhone = listing.phone
+                                            editItemImageUri = null
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit Item",
+                                                tint = Color(0xFF7926E1),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+
+                                        IconButton(onClick = { itemToDelete = listing }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Item",
+                                                tint = Color(0xFFE53935),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (index < userListings.size - 1) {
+                                    HorizontalDivider(color = Color(0xFFF0F0F0))
+                                }
                             }
                         }
                     }
@@ -391,9 +414,132 @@ fun ProfileScreen(
         }
     }
 
-    if (showEditDialog) {
+    if (itemToEdit != null) {
         AlertDialog(
-            onDismissRequest = { showEditDialog = false },
+            onDismissRequest = { itemToEdit = null },
+            title = { Text("Edit Listing Item", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF0E5FC))
+                            .clickable { editItemImagePicker.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (editItemImageUri != null) {
+                            AsyncImage(
+                                model = editItemImageUri,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (itemToEdit?.imageUrl?.isNotBlank() == true) {
+                            ListingImage(
+                                imageUrl = itemToEdit!!.imageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text("Tap to change photo", color = Color(0xFF7926E1), fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = editItemTitle,
+                        onValueChange = { editItemTitle = it },
+                        label = { Text("Name / Title") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = editItemPrice,
+                        onValueChange = { editItemPrice = it },
+                        label = { Text("Price") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = editItemPhone,
+                        onValueChange = { editItemPhone = it },
+                        label = { Text("Phone Number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val current = itemToEdit
+                        itemToEdit = null
+                        if (current != null) {
+                            val updated = current.copy(
+                                title = editItemTitle,
+                                price = editItemPrice,
+                                phone = editItemPhone
+                            )
+                            listingViewModel.updateListing(context, updated, editItemImageUri) {
+                                scope.launch { snackbarHostState.showSnackbar("Listing updated successfully!") }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1))
+                ) {
+                    Text("Save Changes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemToEdit = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { itemToDelete = null },
+            title = { Text("Mark as Sold / Delete", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete '${itemToDelete?.title}'? It will no longer be visible to other users.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val item = itemToDelete
+                        itemToDelete = null
+                        if (item != null) {
+                            listingViewModel.deleteListing(item.id, item.category) {
+                                scope.launch { snackbarHostState.showSnackbar("Item marked as sold / deleted!") }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                ) {
+                    Text("Delete Now")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showEditProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
             title = { Text("Edit Profile Details", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
@@ -459,7 +605,7 @@ fun ProfileScreen(
                             role = editRole.displayName,
                             photoUrl = selectedImageUri?.toString() ?: userProfile?.photoUrl ?: ""
                         ) { error ->
-                            showEditDialog = false
+                            showEditProfileDialog = false
                             if (error != null) {
                                 scope.launch { snackbarHostState.showSnackbar(error) }
                             } else {
@@ -473,7 +619,7 @@ fun ProfileScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
+                TextButton(onClick = { showEditProfileDialog = false }) {
                     Text("Cancel")
                 }
             }

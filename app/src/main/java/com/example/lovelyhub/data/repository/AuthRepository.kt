@@ -32,7 +32,15 @@ class AuthRepository(
         }
     }
 
-    suspend fun signUpWithEmail(name: String, email: String, password: String): Result<FirebaseUser> {
+    suspend fun signUpWithEmail(
+        name: String,
+        email: String,
+        password: String,
+        role: String,
+        businessName: String = "",
+        businessPhone: String = "",
+        businessLocation: String = ""
+    ): Result<FirebaseUser> {
         return try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val user = authResult.user ?: return Result.failure(Exception("User creation failed"))
@@ -41,6 +49,10 @@ class AuthRepository(
                 uid = user.uid,
                 name = name,
                 email = email,
+                role = role,
+                businessName = businessName,
+                businessPhone = businessPhone,
+                businessLocation = businessLocation,
                 photoUrl = user.photoUrl?.toString() ?: ""
             )
 
@@ -88,6 +100,7 @@ class AuthRepository(
                         uid = user.uid,
                         name = user.displayName ?: googleIdTokenCredential.displayName ?: "User",
                         email = user.email ?: "",
+                        role = "Student",
                         photoUrl = user.photoUrl?.toString() ?: ""
                     )
                     firestore.collection("users").document(user.uid).set(newUser).await()
@@ -118,6 +131,9 @@ class AuthRepository(
         name: String,
         email: String,
         role: String,
+        businessName: String,
+        businessPhone: String,
+        businessLocation: String,
         photoUrl: String
     ): Result<Unit> {
         return try {
@@ -125,6 +141,9 @@ class AuthRepository(
                 "name" to name,
                 "email" to email,
                 "role" to role,
+                "businessName" to businessName,
+                "businessPhone" to businessPhone,
+                "businessLocation" to businessLocation,
                 "photoUrl" to photoUrl
             )
             firestore.collection("users").document(uid).update(updates).await()

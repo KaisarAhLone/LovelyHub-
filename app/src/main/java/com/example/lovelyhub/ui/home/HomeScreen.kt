@@ -212,6 +212,7 @@ fun HomeScreen(
                 selectedBottomNavIndex == 2 -> {
                     AddListingScreen(
                         viewModel = listingViewModel,
+                        authViewModel = viewModel,
                         onSuccess = { postedCategory ->
                             selectedCategory = postedCategory
                             selectedBottomNavIndex = 0

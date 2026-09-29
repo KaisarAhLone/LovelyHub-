@@ -62,9 +62,17 @@ class AuthViewModel(
         }
     }
 
-    fun signUpWithEmail(name: String, email: String, password: String) {
+    fun signUpWithEmail(
+        name: String,
+        email: String,
+        password: String,
+        role: String,
+        businessName: String = "",
+        businessPhone: String = "",
+        businessLocation: String = ""
+    ) {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
-            _authState.value = AuthState.Error("Please fill in all fields")
+            _authState.value = AuthState.Error("Please fill in all required fields")
             return
         }
 
@@ -75,7 +83,15 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            repository.signUpWithEmail(name.trim(), email.trim(), password)
+            repository.signUpWithEmail(
+                name = name.trim(),
+                email = email.trim(),
+                password = password,
+                role = role,
+                businessName = businessName.trim(),
+                businessPhone = businessPhone.trim(),
+                businessLocation = businessLocation.trim()
+            )
                 .onSuccess { user ->
                     _authState.value = AuthState.Success(user)
                     loadUserProfile(user.uid)
@@ -104,12 +120,24 @@ class AuthViewModel(
         name: String,
         email: String,
         role: String,
+        businessName: String = "",
+        businessPhone: String = "",
+        businessLocation: String = "",
         photoUrl: String,
         onResult: (String?) -> Unit
     ) {
         val uid = repository.currentUser?.uid ?: return onResult("User not logged in")
         viewModelScope.launch {
-            repository.updateUserProfile(uid, name.trim(), email.trim(), role, photoUrl)
+            repository.updateUserProfile(
+                uid = uid,
+                name = name.trim(),
+                email = email.trim(),
+                role = role,
+                businessName = businessName.trim(),
+                businessPhone = businessPhone.trim(),
+                businessLocation = businessLocation.trim(),
+                photoUrl = photoUrl
+            )
                 .onSuccess {
                     loadUserProfile(uid)
                     onResult(null)

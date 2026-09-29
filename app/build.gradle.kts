@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
     implementation(libs.googleid)
     implementation(libs.coil.compose)
     testImplementation(libs.junit)

@@ -2,7 +2,6 @@ package com.example.lovelyhub.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +17,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -29,6 +32,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,10 +67,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lovelyhub.R
+import com.example.lovelyhub.data.model.UserRole
 import com.example.lovelyhub.ui.components.GoogleSignInButton
 
 @Composable
@@ -81,8 +86,14 @@ fun AuthScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var isPasswordVisible by remember { mutableStateOf(false) }
+    var selectedRole by remember { mutableStateOf(UserRole.STUDENT) }
+    var isRoleDropdownExpanded by remember { mutableStateOf(false) }
 
+    var businessName by remember { mutableStateOf("") }
+    var businessPhone by remember { mutableStateOf("") }
+    var businessLocation by remember { mutableStateOf("") }
+
+    var isPasswordVisible by remember { mutableStateOf(false) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf("") }
 
@@ -238,7 +249,84 @@ fun AuthScreen(
                                     )
                                 )
 
-                                Spacer(modifier = Modifier.height(14.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = selectedRole.displayName,
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        label = { Text("Account Type") },
+                                        trailingIcon = {
+                                            IconButton(onClick = { isRoleDropdownExpanded = true }) {
+                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF7926E1))
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFF7926E1),
+                                            unfocusedBorderColor = Color(0xFFE0E0E0)
+                                        )
+                                    )
+
+                                    DropdownMenu(
+                                        expanded = isRoleDropdownExpanded,
+                                        onDismissRequest = { isRoleDropdownExpanded = false },
+                                        modifier = Modifier.fillMaxWidth(0.85f)
+                                    ) {
+                                        UserRole.entries.forEach { role ->
+                                            DropdownMenuItem(
+                                                text = { Text(role.displayName, fontSize = 14.sp) },
+                                                onClick = {
+                                                    selectedRole = role
+                                                    isRoleDropdownExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (selectedRole == UserRole.BUSINESS_PROVIDER) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedTextField(
+                                        value = businessName,
+                                        onValueChange = { businessName = it },
+                                        label = { Text("Shop / Hotel / Business Name (e.g. Zaika Restro)") },
+                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedTextField(
+                                        value = businessPhone,
+                                        onValueChange = { businessPhone = it },
+                                        label = { Text("Business Phone Number") },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedTextField(
+                                        value = businessLocation,
+                                        onValueChange = { businessLocation = it },
+                                        label = { Text("Campus Location (e.g. Near Law Gate, LPU)") },
+                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
 
@@ -309,7 +397,15 @@ fun AuthScreen(
                         Button(
                             onClick = {
                                 if (selectedTabIndex == 1) {
-                                    viewModel.signUpWithEmail(name, email, password)
+                                    viewModel.signUpWithEmail(
+                                        name = name,
+                                        email = email,
+                                        password = password,
+                                        role = selectedRole.displayName,
+                                        businessName = businessName,
+                                        businessPhone = businessPhone,
+                                        businessLocation = businessLocation
+                                    )
                                 } else {
                                     viewModel.signInWithEmail(email, password)
                                 }

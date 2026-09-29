@@ -6,6 +6,10 @@ data class Listing(
     val title: String = "",
     val price: String = "",
     val phone: String = "",
+    val location: String = "",
     val imageUrl: String = "",
+    val ownerUid: String = "",
+    val isFavorite: Boolean = false,
+    val menuItems: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis()
 )

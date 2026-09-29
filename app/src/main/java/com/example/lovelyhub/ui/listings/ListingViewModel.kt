@@ -24,6 +24,9 @@ class ListingViewModel(
     private val _listingState = MutableStateFlow<ListingState>(ListingState.Loading)
     val listingState: StateFlow<ListingState> = _listingState.asStateFlow()
 
+    private val _userListings = MutableStateFlow<List<Listing>>(emptyList())
+    val userListings: StateFlow<List<Listing>> = _userListings.asStateFlow()
+
     private val _selectedListing = MutableStateFlow<Listing?>(null)
     val selectedListing: StateFlow<Listing?> = _selectedListing.asStateFlow()
 
@@ -36,6 +39,14 @@ class ListingViewModel(
             } catch (e: Exception) {
                 _listingState.value = ListingState.Error(e.localizedMessage ?: "Failed to load listings")
             }
+        }
+    }
+
+    fun fetchUserListings() {
+        viewModelScope.launch {
+            try {
+                _userListings.value = repository.getUserListings()
+            } catch (_: Exception) {}
         }
     }
 
@@ -52,11 +63,37 @@ class ListingViewModel(
             repository.addListing(context, listing, imageUri)
                 .onSuccess {
                     fetchListings(listing.category)
+                    fetchUserListings()
                     onResult(null)
                 }
                 .onFailure { error ->
                     onResult(error.localizedMessage ?: "Failed to add listing")
                 }
+        }
+    }
+
+    fun updateListing(context: Context, listing: Listing, newImageUri: Uri?, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            repository.updateListing(context, listing, newImageUri)
+            fetchListings(listing.category)
+            fetchUserListings()
+            onComplete()
+        }
+    }
+
+    fun deleteListing(listingId: String, currentCategory: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            repository.deleteListing(listingId)
+            fetchListings(currentCategory)
+            fetchUserListings()
+            onComplete()
+        }
+    }
+
+    fun toggleFavorite(listingId: String, currentFavState: Boolean, category: String) {
+        viewModelScope.launch {
+            repository.toggleFavorite(listingId, currentFavState)
+            fetchListings(category)
         }
     }
 }

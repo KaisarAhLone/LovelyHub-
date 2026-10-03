@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
@@ -42,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -101,7 +103,7 @@ fun ListingListScreen(
                         text = category,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = Color(0xFF1E1E2D)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -109,11 +111,11 @@ fun ListingListScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF1E1E2D)
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { innerPadding ->
@@ -121,13 +123,13 @@ fun ListingListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = Color(0xFFF6F7FB)
+            color = MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (val state = listingState) {
                     is ListingState.Loading -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFF7926E1))
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     }
                     is ListingState.Error -> {
@@ -149,12 +151,12 @@ fun ListingListScreen(
                                         text = "No listings in $category yet!",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color.Gray
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
                                         onClick = onAddListingClick,
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Text("Add First Listing in $category", fontWeight = FontWeight.Bold)
@@ -237,13 +239,16 @@ fun ListingCardItem(
     onFavoriteToggle: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val isOpen = listing.status.equals("Open", ignoreCase = true)
+    val cardBg = if (isOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isOpen) 3.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -257,13 +262,13 @@ fun ListingCardItem(
                     contentDescription = listing.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(14.dp))
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, if (isOpen) MaterialTheme.colorScheme.primary else Color.Gray, CircleShape)
                 )
             } else {
                 val icon = when (listing.category) {
-                    "Food" -> Icons.Default.Restaurant
+                    "Restaurants", "Food" -> Icons.Default.Restaurant
                     "Rooms" -> Icons.Default.HomeWork
                     "Rentals" -> Icons.Default.DirectionsCar
                     "Jobs" -> Icons.Default.Work
@@ -272,16 +277,16 @@ fun ListingCardItem(
                 }
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFF0E5FC)),
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = Color(0xFF7926E1),
-                        modifier = Modifier.size(38.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
@@ -289,28 +294,58 @@ fun ListingCardItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = listing.title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E1E2D)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = listing.title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isOpen) Color(0xFF2E7D32).copy(alpha = 0.15f) else Color(0xFFC62828).copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (isOpen) "OPEN" else "CLOSED",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isOpen) Color(0xFF2E7D32) else Color(0xFFC62828)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = listing.price,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF7926E1)
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                if (listing.phone.isNotBlank()) {
+                if (listing.location.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = listing.location,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (listing.phone.isNotBlank()) {
                     Text(
-                        text = "Phone: ${listing.phone}",
-                        fontSize = 12.sp,
-                        color = Color.Gray
+                        text = "Ph: ${listing.phone}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -320,7 +355,7 @@ fun ListingCardItem(
                     Icon(
                         imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Favorite",
-                        tint = if (listing.isFavorite) Color(0xFFE53935) else Color.Gray,
+                        tint = if (listing.isFavorite) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -341,12 +376,12 @@ fun ListingCardItem(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF7926E1).copy(alpha = 0.12f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Call,
                         contentDescription = "Call",
-                        tint = Color(0xFF7926E1),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }

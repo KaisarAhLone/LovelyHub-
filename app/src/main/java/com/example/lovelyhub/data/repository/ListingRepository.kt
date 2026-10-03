@@ -73,13 +73,18 @@ class ListingRepository {
 
         val filtered = if (category.equals("Favorites", ignoreCase = true)) {
             allItems.filter { favoriteIds.contains(it.id) || it.isFavorite }
+        } else if (category.equals("Restaurants", ignoreCase = true) || category.equals("Food", ignoreCase = true)) {
+            allItems.filter { it.category.equals("Restaurants", ignoreCase = true) || it.category.equals("Food", ignoreCase = true) }
         } else {
             allItems.filter { it.category.equals(category, ignoreCase = true) }
         }
 
         return filtered
             .map { listing -> listing.copy(isFavorite = favoriteIds.contains(listing.id)) }
-            .sortedByDescending { it.createdAt }
+            .sortedWith(
+                compareByDescending<Listing> { it.status.equals("Open", ignoreCase = true) }
+                    .thenByDescending { it.createdAt }
+            )
     }
 
     suspend fun getUserListings(): List<Listing> {
@@ -143,7 +148,8 @@ class ListingRepository {
                 "price" to updatedListing.price,
                 "phone" to updatedListing.phone,
                 "category" to updatedListing.category,
-                "imageUrl" to updatedListing.imageUrl
+                "imageUrl" to updatedListing.imageUrl,
+                "status" to updatedListing.status
             )
 
             firestore.collection("listings").document(listing.id).update(updates).await()

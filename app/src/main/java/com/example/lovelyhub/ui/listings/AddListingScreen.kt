@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Sell
@@ -45,9 +47,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -91,17 +93,26 @@ fun AddListingScreen(
     val scope = rememberCoroutineScope()
 
     val userProfile by authViewModel.currentUserProfile.collectAsState()
-    val isStudent = userProfile?.role.isNullOrBlank() || userProfile?.role == "Student"
+    val role = userProfile?.role ?: "Student"
+    val isStudent = role == "Student"
 
-    val categories = remember(isStudent) {
+    val defaultCat = when (role) {
+        "Restaurant Owner" -> "Restaurants"
+        "Room / PG Owner" -> "Rooms"
+        "Rental Provider" -> "Rentals"
+        "Service Provider" -> "Services"
+        else -> "Marketplace"
+    }
+
+    val categories = remember(role) {
         if (isStudent) {
             listOf("Jobs", "Marketplace", "Services")
         } else {
-            listOf("Food", "Rooms", "Rentals", "Jobs", "Marketplace", "Services")
+            listOf("Restaurants", "Rooms", "Rentals", "Jobs", "Marketplace", "Services")
         }
     }
 
-    var selectedCategory by remember(categories) { mutableStateOf(categories[0]) }
+    var selectedCategory by remember(categories, defaultCat) { mutableStateOf(defaultCat) }
     var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
 
     var title by remember(userProfile) { mutableStateOf(userProfile?.businessName ?: "") }
@@ -150,10 +161,10 @@ fun AddListingScreen(
                         text = "ADD NEW LISTING",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color(0xFF1E1E2D)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { innerPadding ->
@@ -161,7 +172,7 @@ fun AddListingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = Color(0xFFF6F7FB)
+            color = MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(
@@ -191,7 +202,7 @@ fun AddListingScreen(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "Students can post in Jobs, Marketplace, & Services. To list Food, Rooms, or Rentals, please register as a Business Provider / Shopkeeper.",
+                                    text = "Students can post in Jobs, Marketplace, & Services. To list Food, Rooms, or Rentals, please register as an Owner/Provider.",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color(0xFFE65100),
@@ -204,7 +215,7 @@ fun AddListingScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                     ) {
                         Column(
@@ -216,7 +227,7 @@ fun AddListingScreen(
                                 text = "Category",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = Color(0xFF1E1E2D)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
@@ -225,18 +236,14 @@ fun AddListingScreen(
                                     value = selectedCategory,
                                     onValueChange = {},
                                     readOnly = true,
-                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                     trailingIcon = {
                                         IconButton(onClick = { isCategoryDropdownExpanded = true }) {
-                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF7926E1))
+                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF7926E1),
-                                        unfocusedBorderColor = Color(0xFFE0E0E0)
-                                    )
+                                    shape = RoundedCornerShape(12.dp)
                                 )
 
                                 DropdownMenu(
@@ -262,7 +269,7 @@ fun AddListingScreen(
                                 text = "Photo",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = Color(0xFF1E1E2D)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
@@ -271,8 +278,8 @@ fun AddListingScreen(
                                     .fillMaxWidth()
                                     .height(150.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFFF0E5FC))
-                                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
                                     .clickable { imagePickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -288,7 +295,7 @@ fun AddListingScreen(
                                         Icon(
                                             imageVector = Icons.Default.CameraAlt,
                                             contentDescription = null,
-                                            tint = Color(0xFF7926E1),
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(38.dp)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
@@ -296,7 +303,7 @@ fun AddListingScreen(
                                             text = "Upload Image / Photo",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF7926E1)
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
@@ -307,8 +314,8 @@ fun AddListingScreen(
                             OutlinedTextField(
                                 value = title,
                                 onValueChange = { title = it },
-                                label = { Text("Shop / Item Name (e.g. Zaika Restro, DSA Book)") },
-                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                label = { Text("Shop / Item Name (e.g. Zaika Restro)") },
+                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
@@ -319,8 +326,8 @@ fun AddListingScreen(
                             OutlinedTextField(
                                 value = price,
                                 onValueChange = { price = it },
-                                label = { Text("Price (e.g. ₹180 or ₹5000/month)") },
-                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                label = { Text("Starting Price (e.g. ₹180 or ₹5000/month)") },
+                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
@@ -333,32 +340,49 @@ fun AddListingScreen(
                                     value = location,
                                     onValueChange = { location = it },
                                     label = { Text("Campus / Shop Location") },
-                                    leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                    leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
                                 )
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                                OutlinedButton(
-                                    onClick = {
-                                        locationPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                                Manifest.permission.ACCESS_COARSE_LOCATION
-                                            )
-                                        )
-                                    },
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    if (isFetchingLocation) {
-                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color(0xFF7926E1))
-                                    } else {
-                                        Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF7926E1), modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Use Current GPS Location", fontSize = 13.sp, color = Color(0xFF7926E1), fontWeight = FontWeight.SemiBold)
+                                    OutlinedButton(
+                                        onClick = {
+                                            MapLocationHelper.openMapPicker(context, location)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            locationPermissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        if (isFetchingLocation) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.primary)
+                                        } else {
+                                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Current GPS", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                        }
                                     }
                                 }
                             }
@@ -369,7 +393,7 @@ fun AddListingScreen(
                                 value = phone,
                                 onValueChange = { phone = it },
                                 label = { Text("Contact Phone Number") },
-                                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -381,8 +405,8 @@ fun AddListingScreen(
                             OutlinedTextField(
                                 value = menuInput,
                                 onValueChange = { menuInput = it },
-                                label = { Text("Menu / Offerings Items (comma separated e.g. Biryani - ₹180, Coffee - ₹90)") },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                label = { Text("Menu / Offerings Items (comma separated)") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -425,7 +449,7 @@ fun AddListingScreen(
                                     }
                                 },
                                 enabled = !isLoading,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1)),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()

@@ -8,6 +8,7 @@ data class Listing(
     val phone: String = "",
     val location: String = "",
     val imageUrl: String = "",
+    val status: String = "Open",
     val ownerUid: String = "",
     val isFavorite: Boolean = false,
     val menuItems: List<String> = emptyList(),

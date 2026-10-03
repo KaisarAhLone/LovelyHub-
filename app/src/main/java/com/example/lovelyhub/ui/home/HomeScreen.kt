@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -105,7 +106,7 @@ fun HomeScreen(
 
     val categories = remember {
         listOf(
-            HomeCategoryItem("Food", Icons.Default.Restaurant, Color(0xFFD89B00), Color(0xFFFFF8E1)),
+            HomeCategoryItem("Restaurants", Icons.Default.Restaurant, Color(0xFFD89B00), Color(0xFFFFF8E1)),
             HomeCategoryItem("Rooms", Icons.Default.HomeWork, Color(0xFF1E88E5), Color(0xFFE3F2FD)),
             HomeCategoryItem("Rentals", Icons.Default.DirectionsCar, Color(0xFF1976D2), Color(0xFFE8F0FE)),
             HomeCategoryItem("Jobs", Icons.Default.Work, Color(0xFF5E35B1), Color(0xFFEDE7F6)),
@@ -130,7 +131,7 @@ fun HomeScreen(
                                 text = "LOVELY HUB",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 22.sp,
-                                color = Color(0xFF1E1E2D),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 letterSpacing = 1.sp
                             )
                         }
@@ -143,17 +144,17 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Sign Out",
-                                tint = Color(0xFF7926E1)
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
         },
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 6.dp
             ) {
                 val navItems = listOf(
@@ -175,9 +176,9 @@ fun HomeScreen(
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF1A237E),
-                            selectedTextColor = Color(0xFF1A237E),
-                            indicatorColor = Color(0xFF1A237E).copy(alpha = 0.12f)
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         )
                     )
                 }
@@ -188,7 +189,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = Color.White
+            color = MaterialTheme.colorScheme.background
         ) {
             when {
                 selectedListingDetail != null -> {
@@ -234,17 +235,17 @@ fun HomeScreen(
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search anything...", fontSize = 15.sp, color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                            trailingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                            placeholder = { Text("Search anything...", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(28.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color(0xFFFAFAFA),
-                                focusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFF1E1E2D),
-                                unfocusedBorderColor = Color(0xFFBDBDBD)
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                             )
                         )
 
@@ -267,8 +268,8 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .size(86.dp)
                                             .clip(RoundedCornerShape(18.dp))
-                                            .background(category.bgColor)
-                                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(18.dp)),
+                                            .background(MaterialTheme.colorScheme.surface)
+                                            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(18.dp)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
@@ -285,7 +286,7 @@ fun HomeScreen(
                                         text = category.title,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF212121),
+                                        color = MaterialTheme.colorScheme.onBackground,
                                         textAlign = TextAlign.Center
                                     )
                                 }

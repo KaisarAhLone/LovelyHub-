@@ -1,7 +1,11 @@
 package com.example.lovelyhub.ui.auth
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +25,8 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Storefront
@@ -37,8 +43,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -54,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +80,8 @@ import androidx.compose.ui.unit.sp
 import com.example.lovelyhub.R
 import com.example.lovelyhub.data.model.UserRole
 import com.example.lovelyhub.ui.components.GoogleSignInButton
+import com.example.lovelyhub.ui.components.MapLocationHelper
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
@@ -81,6 +91,7 @@ fun AuthScreen(
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var email by remember { mutableStateOf("") }
@@ -92,12 +103,28 @@ fun AuthScreen(
     var businessName by remember { mutableStateOf("") }
     var businessPhone by remember { mutableStateOf("") }
     var businessLocation by remember { mutableStateOf("") }
+    var isFetchingGps by remember { mutableStateOf(false) }
 
     var isPasswordVisible by remember { mutableStateOf(false) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf("") }
 
     val webClientId = stringResource(R.string.default_web_client_id)
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true || permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            isFetchingGps = true
+            MapLocationHelper.getCurrentGpsAddress(context) { gpsLoc ->
+                isFetchingGps = false
+                businessLocation = gpsLoc
+                scope.launch { snackbarHostState.showSnackbar("GPS Location detected!") }
+            }
+        } else {
+            scope.launch { snackbarHostState.showSnackbar("Location permission required") }
+        }
+    }
 
     LaunchedEffect(authState) {
         when (authState) {
@@ -115,14 +142,14 @@ fun AuthScreen(
 
     val brandGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF7926E1),
-            Color(0xFF511CB2)
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary
         )
     )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF6F7FB)
+        color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -181,7 +208,7 @@ fun AuthScreen(
                         .padding(horizontal = 20.dp)
                         .padding(top = 0.dp, bottom = 24.dp),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Column(
@@ -192,7 +219,7 @@ fun AuthScreen(
                     ) {
                         TabRow(
                             selectedTabIndex = selectedTabIndex,
-                            containerColor = Color(0xFFF0E5FC),
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp)),
@@ -201,7 +228,7 @@ fun AuthScreen(
                                     modifier = Modifier
                                         .tabIndicatorOffset(tabPositions[selectedTabIndex])
                                         .clip(RoundedCornerShape(12.dp)),
-                                    color = Color(0xFF7926E1)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         ) {
@@ -213,7 +240,7 @@ fun AuthScreen(
                                         text = "Login",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = if (selectedTabIndex == 0) Color(0xFF7926E1) else Color.Gray
+                                        color = if (selectedTabIndex == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             )
@@ -225,7 +252,7 @@ fun AuthScreen(
                                         text = "Register",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = if (selectedTabIndex == 1) Color(0xFF7926E1) else Color.Gray
+                                        color = if (selectedTabIndex == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             )
@@ -239,14 +266,10 @@ fun AuthScreen(
                                     value = name,
                                     onValueChange = { name = it },
                                     label = { Text("Full Name") },
-                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF7926E1),
-                                        unfocusedBorderColor = Color(0xFFE0E0E0)
-                                    )
+                                    shape = RoundedCornerShape(12.dp)
                                 )
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -256,18 +279,14 @@ fun AuthScreen(
                                         value = selectedRole.displayName,
                                         onValueChange = {},
                                         readOnly = true,
-                                        label = { Text("Account Type") },
+                                        label = { Text("Account Type / Role") },
                                         trailingIcon = {
                                             IconButton(onClick = { isRoleDropdownExpanded = true }) {
-                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF7926E1))
+                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Color(0xFF7926E1),
-                                            unfocusedBorderColor = Color(0xFFE0E0E0)
-                                        )
+                                        shape = RoundedCornerShape(12.dp)
                                     )
 
                                     DropdownMenu(
@@ -287,14 +306,14 @@ fun AuthScreen(
                                     }
                                 }
 
-                                if (selectedRole == UserRole.BUSINESS_PROVIDER) {
+                                if (selectedRole != UserRole.STUDENT) {
                                     Spacer(modifier = Modifier.height(12.dp))
 
                                     OutlinedTextField(
                                         value = businessName,
                                         onValueChange = { businessName = it },
-                                        label = { Text("Shop / Hotel / Business Name (e.g. Zaika Restro)") },
-                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                        label = { Text("Shop / Hotel / Business Name") },
+                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
@@ -306,7 +325,7 @@ fun AuthScreen(
                                         value = businessPhone,
                                         onValueChange = { businessPhone = it },
                                         label = { Text("Business Phone Number") },
-                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF7926E1)) },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
@@ -315,15 +334,57 @@ fun AuthScreen(
 
                                     Spacer(modifier = Modifier.height(12.dp))
 
-                                    OutlinedTextField(
-                                        value = businessLocation,
-                                        onValueChange = { businessLocation = it },
-                                        label = { Text("Campus Location (e.g. Near Law Gate, LPU)") },
-                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF7926E1)) },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        OutlinedTextField(
+                                            value = businessLocation,
+                                            onValueChange = { businessLocation = it },
+                                            label = { Text("Campus Location") },
+                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    MapLocationHelper.openMapPicker(context, businessLocation)
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    locationPermissionLauncher.launch(
+                                                        arrayOf(
+                                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                                        )
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                if (isFetchingGps) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.primary)
+                                                } else {
+                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Current GPS", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -334,15 +395,11 @@ fun AuthScreen(
                             value = email,
                             onValueChange = { email = it },
                             label = { Text("Email Address") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF7926E1)) },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF7926E1),
-                                unfocusedBorderColor = Color(0xFFE0E0E0)
-                            )
+                            shape = RoundedCornerShape(12.dp)
                         )
 
                         Spacer(modifier = Modifier.height(14.dp))
@@ -351,13 +408,13 @@ fun AuthScreen(
                             value = password,
                             onValueChange = { password = it },
                             label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF7926E1)) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             trailingIcon = {
                                 IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                                     Icon(
                                         imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                         contentDescription = "Toggle Password",
-                                        tint = Color.Gray
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             },
@@ -365,11 +422,7 @@ fun AuthScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF7926E1),
-                                unfocusedBorderColor = Color(0xFFE0E0E0)
-                            )
+                            shape = RoundedCornerShape(12.dp)
                         )
 
                         if (selectedTabIndex == 0) {
@@ -383,7 +436,7 @@ fun AuthScreen(
                                     Text(
                                         text = "Forgot Password?",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF7926E1),
+                                        color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -415,7 +468,7 @@ fun AuthScreen(
                                 .fillMaxWidth()
                                 .height(52.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1))
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             if (authState is AuthState.Loading) {
                                 CircularProgressIndicator(
@@ -441,17 +494,17 @@ fun AuthScreen(
                         ) {
                             HorizontalDivider(
                                 modifier = Modifier.weight(1f),
-                                color = Color(0xFFE0E0E0)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                             )
                             Text(
                                 text = "  OR  ",
                                 fontSize = 12.sp,
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
                             HorizontalDivider(
                                 modifier = Modifier.weight(1f),
-                                color = Color(0xFFE0E0E0)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                             )
                         }
 
@@ -500,7 +553,7 @@ fun AuthScreen(
                             showForgotPasswordDialog = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7926E1))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Send Reset Link")
                 }

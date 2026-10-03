@@ -29,6 +29,15 @@ object MapLocationHelper {
         }
     }
 
+    fun openMapPicker(context: Context, currentQuery: String) {
+        val query = if (currentQuery.isBlank()) "LPU Campus" else currentQuery
+        val browserUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(query)}")
+        val intent = Intent(Intent.ACTION_VIEW, browserUri)
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {}
+    }
+
     @SuppressLint("MissingPermission")
     fun getCurrentGpsAddress(context: Context, onResult: (String) -> Unit) {
         try {

@@ -1,6 +1,7 @@
 package com.example.lovelyhub.ui.auth
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lovelyhub.data.model.User
@@ -63,13 +64,18 @@ class AuthViewModel(
     }
 
     fun signUpWithEmail(
+        context: Context,
         name: String,
         email: String,
         password: String,
         role: String,
         businessName: String = "",
         businessPhone: String = "",
-        businessLocation: String = ""
+        businessLocation: String = "",
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false,
+        imageUri: Uri? = null
     ) {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Please fill in all required fields")
@@ -84,13 +90,18 @@ class AuthViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             repository.signUpWithEmail(
+                context = context,
                 name = name.trim(),
                 email = email.trim(),
                 password = password,
                 role = role,
                 businessName = businessName.trim(),
                 businessPhone = businessPhone.trim(),
-                businessLocation = businessLocation.trim()
+                businessLocation = businessLocation.trim(),
+                openTime = openTime,
+                closeTime = closeTime,
+                is24Hours = is24Hours,
+                imageUri = imageUri
             )
                 .onSuccess { user ->
                     _authState.value = AuthState.Success(user)

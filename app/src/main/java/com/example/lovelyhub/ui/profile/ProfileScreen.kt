@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -103,6 +104,15 @@ fun ProfileScreen(
     var itemToDelete by remember { mutableStateOf<Listing?>(null) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val colorfulGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF673AB7),
+            Color(0xFF00BCD4),
+            Color(0xFF00E676),
+            Color(0xFFFFB300)
+        )
+    )
+
     val editItemImagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -140,10 +150,13 @@ fun ProfileScreen(
         ?: currentUser?.photoUrl?.toString()
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = Modifier.fillMaxSize()
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorfulGradient)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -152,9 +165,9 @@ fun ProfileScreen(
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -171,20 +184,20 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .size(96.dp)
                                         .clip(CircleShape)
-                                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        .border(2.5.dp, Color(0xFF673AB7), CircleShape)
                                 )
                             } else {
                                 Box(
                                     modifier = Modifier
                                         .size(96.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        .background(Color(0xFFF0E5FC)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = Color(0xFF673AB7),
                                         modifier = Modifier.size(54.dp)
                                     )
                                 }
@@ -194,7 +207,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary)
+                                    .background(Color(0xFF673AB7))
                                     .clickable { imagePickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -213,7 +226,7 @@ fun ProfileScreen(
                             text = userProfile?.name ?: currentUser?.displayName ?: "Campus User",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Color(0xFF1E1E2D)
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -221,7 +234,7 @@ fun ProfileScreen(
                         Text(
                             text = userProfile?.email ?: currentUser?.email ?: "",
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Color.DarkGray
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -229,14 +242,14 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .background(Color(0xFF673AB7).copy(alpha = 0.12f))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = userProfile?.role ?: "Student",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF673AB7)
                             )
                         }
 
@@ -249,7 +262,7 @@ fun ProfileScreen(
                                 editRole = UserRole.entries.find { it.displayName == userProfile?.role } ?: UserRole.STUDENT
                                 showEditProfileDialog = true
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -265,17 +278,17 @@ fun ProfileScreen(
                 Text(
                     text = "My Uploaded Items",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         if (userListings.isEmpty()) {
@@ -288,7 +301,7 @@ fun ProfileScreen(
                                 Text(
                                     text = "You haven't uploaded any items yet.",
                                     fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = Color.Gray,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -316,13 +329,13 @@ fun ProfileScreen(
                                             text = listing.title,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = Color(0xFF1E1E2D)
                                         )
                                         Text(
                                             text = "${listing.category} • ${listing.price}",
                                             fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold
+                                            color = Color(0xFF673AB7),
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
 
@@ -337,7 +350,7 @@ fun ProfileScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Edit,
                                                 contentDescription = "Edit Item",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint = Color(0xFF673AB7),
                                                 modifier = Modifier.size(20.dp)
                                             )
                                         }
@@ -354,7 +367,7 @@ fun ProfileScreen(
                                 }
 
                                 if (index < userListings.size - 1) {
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                                 }
                             }
                         }
@@ -366,21 +379,21 @@ fun ProfileScreen(
                 Text(
                     text = "Account & Settings",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         ProfileOptionItem("My Favorites", Icons.Default.Favorite)
-                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                         ProfileOptionItem("App Settings", Icons.Default.Settings)
                     }
                 }
@@ -426,7 +439,7 @@ fun ProfileScreen(
                             .fillMaxWidth()
                             .height(120.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .background(Color(0xFFF0E5FC))
                             .clickable { editItemImagePicker.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
@@ -445,7 +458,7 @@ fun ProfileScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
-                            Text("Tap to change photo", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                            Text("Tap to change photo", color = Color(0xFF673AB7), fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -496,7 +509,7 @@ fun ProfileScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
                 ) {
                     Text("Save Changes")
                 }
@@ -614,7 +627,7 @@ fun ProfileScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
                 ) {
                     Text("Save Changes")
                 }
@@ -637,9 +650,9 @@ fun ProfileOptionItem(title: String, icon: ImageVector) {
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = title, tint = Color(0xFF673AB7), modifier = Modifier.size(22.dp))
         Spacer(modifier = Modifier.width(14.dp))
-        Text(title, fontWeight = FontWeight.Medium, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1E1E2D), modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
     }
 }

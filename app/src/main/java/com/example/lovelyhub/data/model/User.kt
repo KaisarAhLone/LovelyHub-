@@ -8,6 +8,9 @@ data class User(
     val businessName: String = "",
     val businessPhone: String = "",
     val businessLocation: String = "",
+    val openTime: String = "09:00 AM",
+    val closeTime: String = "10:00 PM",
+    val is24Hours: Boolean = false,
     val photoUrl: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )

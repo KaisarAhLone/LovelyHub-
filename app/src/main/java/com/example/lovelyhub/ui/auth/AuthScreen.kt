@@ -1,10 +1,14 @@
 package com.example.lovelyhub.ui.auth
 
 import android.Manifest
+import android.app.TimePickerDialog
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
@@ -37,6 +43,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -68,6 +76,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,11 +86,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.lovelyhub.R
 import com.example.lovelyhub.data.model.UserRole
 import com.example.lovelyhub.ui.components.GoogleSignInButton
 import com.example.lovelyhub.ui.components.MapLocationHelper
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun AuthScreen(
@@ -103,6 +115,10 @@ fun AuthScreen(
     var businessName by remember { mutableStateOf("") }
     var businessPhone by remember { mutableStateOf("") }
     var businessLocation by remember { mutableStateOf("") }
+    var openTime by remember { mutableStateOf("09:00 AM") }
+    var closeTime by remember { mutableStateOf("10:00 PM") }
+    var is24Hours by remember { mutableStateOf(false) }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var isFetchingGps by remember { mutableStateOf(false) }
 
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -110,6 +126,40 @@ fun AuthScreen(
     var resetEmail by remember { mutableStateOf("") }
 
     val webClientId = stringResource(R.string.default_web_client_id)
+
+    val colorfulGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF673AB7),
+            Color(0xFF00BCD4),
+            Color(0xFF00E676),
+            Color(0xFFFFB300)
+        )
+    )
+
+    fun showClockPicker(onTimeSelected: (String) -> Unit) {
+        val cal = Calendar.getInstance()
+        val picker = TimePickerDialog(
+            context,
+            { _, h, m ->
+                val isAm = h < 12
+                val h12 = if (h == 0) 12 else if (h > 12) h - 12 else h
+                val formatted = String.format(Locale.getDefault(), "%02d:%02d %s", h12, m, if (isAm) "AM" else "PM")
+                onTimeSelected(formatted)
+            },
+            cal.get(Calendar.HOUR_OF_DAY),
+            cal.get(Calendar.MINUTE),
+            false
+        )
+        picker.show()
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            profileImageUri = uri
+        }
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -140,18 +190,14 @@ fun AuthScreen(
         }
     }
 
-    val brandGradient = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary
-        )
-    )
-
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = Modifier.fillMaxSize()
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorfulGradient)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -160,8 +206,7 @@ fun AuthScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
-                        .background(brandGradient),
+                        .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -170,14 +215,14 @@ fun AuthScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.White.copy(alpha = 0.2f)),
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color.White.copy(alpha = 0.25f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "LH",
-                                fontSize = 26.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White
                             )
@@ -187,17 +232,17 @@ fun AuthScreen(
 
                         Text(
                             text = "LOVELY HUB",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.2.sp
                         )
 
                         Text(
                             text = "'Everything Around Your Campus'",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.9f)
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.95f)
                         )
                     }
                 }
@@ -206,9 +251,9 @@ fun AuthScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
-                        .padding(top = 0.dp, bottom = 24.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        .padding(bottom = 24.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Column(
@@ -219,7 +264,7 @@ fun AuthScreen(
                     ) {
                         TabRow(
                             selectedTabIndex = selectedTabIndex,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            containerColor = Color(0xFFF0E5FC),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp)),
@@ -228,7 +273,7 @@ fun AuthScreen(
                                     modifier = Modifier
                                         .tabIndicatorOffset(tabPositions[selectedTabIndex])
                                         .clip(RoundedCornerShape(12.dp)),
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = Color(0xFF673AB7)
                                 )
                             }
                         ) {
@@ -240,7 +285,7 @@ fun AuthScreen(
                                         text = "Login",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = if (selectedTabIndex == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = if (selectedTabIndex == 0) Color(0xFF673AB7) else Color.Gray
                                     )
                                 }
                             )
@@ -252,7 +297,7 @@ fun AuthScreen(
                                         text = "Register",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = if (selectedTabIndex == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = if (selectedTabIndex == 1) Color(0xFF673AB7) else Color.Gray
                                     )
                                 }
                             )
@@ -262,11 +307,49 @@ fun AuthScreen(
 
                         AnimatedVisibility(visible = selectedTabIndex == 1) {
                             Column {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(130.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color(0xFFF0E5FC))
+                                        .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (profileImageUri != null) {
+                                        AsyncImage(
+                                            model = profileImageUri,
+                                            contentDescription = "Photo",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                imageVector = Icons.Default.CameraAlt,
+                                                contentDescription = null,
+                                                tint = Color(0xFF673AB7),
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Upload Profile / Cover Photo",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF673AB7)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
                                 OutlinedTextField(
                                     value = name,
                                     onValueChange = { name = it },
                                     label = { Text("Full Name") },
-                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF673AB7)) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
@@ -282,7 +365,7 @@ fun AuthScreen(
                                         label = { Text("Account Type / Role") },
                                         trailingIcon = {
                                             IconButton(onClick = { isRoleDropdownExpanded = true }) {
-                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
@@ -313,7 +396,7 @@ fun AuthScreen(
                                         value = businessName,
                                         onValueChange = { businessName = it },
                                         label = { Text("Shop / Hotel / Business Name") },
-                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = Color(0xFF673AB7)) },
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
@@ -325,7 +408,7 @@ fun AuthScreen(
                                         value = businessPhone,
                                         onValueChange = { businessPhone = it },
                                         label = { Text("Business Phone Number") },
-                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
@@ -339,7 +422,7 @@ fun AuthScreen(
                                             value = businessLocation,
                                             onValueChange = { businessLocation = it },
                                             label = { Text("Campus Location") },
-                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
                                             singleLine = true,
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(12.dp)
@@ -376,12 +459,71 @@ fun AuthScreen(
                                                 shape = RoundedCornerShape(10.dp)
                                             ) {
                                                 if (isFetchingGps) {
-                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.primary)
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
                                                 } else {
-                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
                                                     Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("Current GPS", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                                    Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
                                                 }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Checkbox(
+                                            checked = is24Hours,
+                                            onCheckedChange = { is24Hours = it },
+                                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
+                                        )
+                                        Text("Open 24 Hours", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    }
+
+                                    if (!is24Hours) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                OutlinedTextField(
+                                                    value = openTime,
+                                                    onValueChange = {},
+                                                    readOnly = true,
+                                                    label = { Text("Open Time") },
+                                                    leadingIcon = {
+                                                        IconButton(onClick = { showClockPicker { openTime = it } }) {
+                                                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
+                                                        }
+                                                    },
+                                                    singleLine = true,
+                                                    modifier = Modifier.fillMaxWidth().clickable {
+                                                        showClockPicker { openTime = it }
+                                                    },
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                            }
+
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                OutlinedTextField(
+                                                    value = closeTime,
+                                                    onValueChange = {},
+                                                    readOnly = true,
+                                                    label = { Text("Close Time") },
+                                                    leadingIcon = {
+                                                        IconButton(onClick = { showClockPicker { closeTime = it } }) {
+                                                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
+                                                        }
+                                                    },
+                                                    singleLine = true,
+                                                    modifier = Modifier.fillMaxWidth().clickable {
+                                                        showClockPicker { closeTime = it }
+                                                    },
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
                                             }
                                         }
                                     }
@@ -395,7 +537,7 @@ fun AuthScreen(
                             value = email,
                             onValueChange = { email = it },
                             label = { Text("Email Address") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF673AB7)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -408,13 +550,13 @@ fun AuthScreen(
                             value = password,
                             onValueChange = { password = it },
                             label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF673AB7)) },
                             trailingIcon = {
                                 IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                                     Icon(
                                         imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                         contentDescription = "Toggle Password",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = Color.Gray
                                     )
                                 }
                             },
@@ -436,7 +578,7 @@ fun AuthScreen(
                                     Text(
                                         text = "Forgot Password?",
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.primary,
+                                        color = Color(0xFF673AB7),
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -451,13 +593,18 @@ fun AuthScreen(
                             onClick = {
                                 if (selectedTabIndex == 1) {
                                     viewModel.signUpWithEmail(
+                                        context = context,
                                         name = name,
                                         email = email,
                                         password = password,
                                         role = selectedRole.displayName,
                                         businessName = businessName,
                                         businessPhone = businessPhone,
-                                        businessLocation = businessLocation
+                                        businessLocation = businessLocation,
+                                        openTime = openTime,
+                                        closeTime = closeTime,
+                                        is24Hours = is24Hours,
+                                        imageUri = profileImageUri
                                     )
                                 } else {
                                     viewModel.signInWithEmail(email, password)
@@ -468,7 +615,7 @@ fun AuthScreen(
                                 .fillMaxWidth()
                                 .height(52.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
                         ) {
                             if (authState is AuthState.Loading) {
                                 CircularProgressIndicator(
@@ -494,17 +641,17 @@ fun AuthScreen(
                         ) {
                             HorizontalDivider(
                                 modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                color = Color.Gray.copy(alpha = 0.3f)
                             )
                             Text(
                                 text = "  OR  ",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color.Gray,
                                 fontWeight = FontWeight.Medium
                             )
                             HorizontalDivider(
                                 modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                color = Color.Gray.copy(alpha = 0.3f)
                             )
                         }
 
@@ -553,7 +700,7 @@ fun AuthScreen(
                             showForgotPasswordDialog = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
                 ) {
                     Text("Send Reset Link")
                 }

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.util.Base64
 import com.example.lovelyhub.data.model.Listing
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
@@ -112,18 +113,54 @@ class ListingRepository {
             listing.imageUrl
         }
 
-        val docRef = firestore.collection("listings").document()
-        val finalListing = listing.copy(
-            id = if (listing.id.isBlank()) docRef.id else listing.id,
-            imageUrl = encodedImage,
-            ownerUid = uid
-        )
+        val isBusinessCategory = listing.category.equals("Restaurants", ignoreCase = true) ||
+                listing.category.equals("Food", ignoreCase = true) ||
+                listing.category.equals("Rooms", ignoreCase = true) ||
+                listing.category.equals("Rentals", ignoreCase = true)
 
-        memoryListings.add(0, finalListing)
+        if (isBusinessCategory && uid.isNotBlank()) {
+            val dishEntry = if (encodedImage.isNotBlank()) {
+                "${listing.title} - ${listing.price}|$encodedImage"
+            } else {
+                "${listing.title} - ${listing.price}"
+            }
 
-        try {
-            docRef.set(finalListing).await()
-        } catch (_: Exception) {}
+            try {
+                val shopDocRef = firestore.collection("listings").document(uid)
+                val doc = shopDocRef.get().await()
+                if (doc.exists()) {
+                    shopDocRef.update("menuItems", FieldValue.arrayUnion(dishEntry)).await()
+                } else {
+                    val newShop = listing.copy(
+                        id = uid,
+                        ownerUid = uid,
+                        imageUrl = encodedImage,
+                        menuItems = listOf(dishEntry),
+                        isShop = true
+                    )
+                    shopDocRef.set(newShop).await()
+                    memoryListings.add(0, newShop)
+                }
+
+                val index = memoryListings.indexOfFirst { it.id == uid }
+                if (index != -1) {
+                    val existing = memoryListings[index]
+                    val updatedList = existing.menuItems + dishEntry
+                    memoryListings[index] = existing.copy(menuItems = updatedList)
+                }
+            } catch (_: Exception) {}
+        } else {
+            val docRef = firestore.collection("listings").document()
+            val finalListing = listing.copy(
+                id = if (listing.id.isBlank()) docRef.id else listing.id,
+                imageUrl = encodedImage,
+                ownerUid = uid
+            )
+            memoryListings.add(0, finalListing)
+            try {
+                docRef.set(finalListing).await()
+            } catch (_: Exception) {}
+        }
 
         return Result.success(Unit)
     }

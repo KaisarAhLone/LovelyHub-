@@ -1,5 +1,7 @@
 package com.example.lovelyhub.ui.home
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,47 +10,57 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,13 +68,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.ui.auth.AuthViewModel
 import com.example.lovelyhub.ui.listings.AddListingScreen
@@ -85,13 +101,22 @@ fun HomeScreen(
     listingViewModel: ListingViewModel = viewModel(),
     onSignOut: () -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
     var selectedBottomNavIndex by remember { mutableStateOf(0) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedListingDetail by remember { mutableStateOf<Listing?>(null) }
+    var showProfileScreen by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+    val userProfile by viewModel.currentUserProfile.collectAsState()
+    val currentUser = viewModel.currentUser
+
+    val userPhotoUrl = userProfile?.photoUrl?.ifBlank { null } ?: currentUser?.photoUrl?.toString()
+    val userName = userProfile?.name?.ifBlank { null } ?: currentUser?.displayName ?: "Campus Student"
+
+    BackHandler(enabled = showProfileScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
         when {
+            showProfileScreen -> {
+                showProfileScreen = false
+            }
             selectedListingDetail != null -> {
                 selectedListingDetail = null
             }
@@ -104,23 +129,32 @@ fun HomeScreen(
         }
     }
 
+    val colorfulGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF673AB7),
+            Color(0xFF00BCD4),
+            Color(0xFF00E676),
+            Color(0xFFFFB300)
+        )
+    )
+
     val categories = remember {
         listOf(
-            HomeCategoryItem("Restaurants", Icons.Default.Restaurant, Color(0xFFD89B00), Color(0xFFFFF8E1)),
-            HomeCategoryItem("Rooms", Icons.Default.HomeWork, Color(0xFF1E88E5), Color(0xFFE3F2FD)),
-            HomeCategoryItem("Rentals", Icons.Default.DirectionsCar, Color(0xFF1976D2), Color(0xFFE8F0FE)),
-            HomeCategoryItem("Jobs", Icons.Default.Work, Color(0xFF5E35B1), Color(0xFFEDE7F6)),
-            HomeCategoryItem("Marketplace", Icons.Default.Storefront, Color(0xFFD81B60), Color(0xFFFCE4EC)),
-            HomeCategoryItem("Services", Icons.Default.Build, Color(0xFF43A047), Color(0xFFE8F5E9)),
-            HomeCategoryItem("Open Now", Icons.Default.Schedule, Color(0xFF2E7D32), Color(0xFFE8F5E9)),
-            HomeCategoryItem("Favorites", Icons.Default.Favorite, Color(0xFFE53935), Color(0xFFFFEBEE)),
-            HomeCategoryItem("More", Icons.Default.MoreHoriz, Color(0xFF616161), Color(0xFFF5F5F5))
+            HomeCategoryItem("Restaurants", Icons.Default.Restaurant, Color(0xFFFF8F00), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Rooms", Icons.Default.HomeWork, Color(0xFF0288D1), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Rentals", Icons.Default.DirectionsCar, Color(0xFF1565C0), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Jobs", Icons.Default.Work, Color(0xFF7B1FA2), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Marketplace", Icons.Default.Storefront, Color(0xFFC2185B), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Services", Icons.Default.Build, Color(0xFF2E7D32), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Open Now", Icons.Default.Schedule, Color(0xFF00796B), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("Favorites", Icons.Default.Favorite, Color(0xFFD32F2F), Color.White.copy(alpha = 0.95f)),
+            HomeCategoryItem("More", Icons.Default.MoreHoriz, Color(0xFF512DA8), Color.White.copy(alpha = 0.95f))
         )
     }
 
     Scaffold(
         topBar = {
-            if (selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
+            if (!showProfileScreen && selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
                 TopAppBar(
                     title = {
                         Box(
@@ -131,54 +165,102 @@ fun HomeScreen(
                                 text = "LOVELY HUB",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                letterSpacing = 1.sp
+                                color = Color.White,
+                                letterSpacing = 1.2.sp
                             )
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
-                            viewModel.signOut()
-                            onSignOut()
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = "Sign Out",
-                                tint = MaterialTheme.colorScheme.primary
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable { showProfileScreen = true }
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            if (userPhotoUrl != null) {
+                                AsyncImage(
+                                    model = userPhotoUrl,
+                                    contentDescription = "Profile",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .border(1.5.dp, Color.White, CircleShape)
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.3f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Profile",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Profile",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF673AB7))
                 )
             }
         },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
+                containerColor = Color(0xFF1E1E2D),
+                tonalElevation = 8.dp,
+                modifier = Modifier.clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
             ) {
                 val navItems = listOf(
                     "Home" to Icons.Default.Home,
-                    "Search" to Icons.Default.Search,
                     "Add" to Icons.Default.AddBox,
                     "Chats" to Icons.AutoMirrored.Filled.Chat,
-                    "Profile" to Icons.Default.Person
+                    "About" to Icons.Default.Info
                 )
 
                 navItems.forEachIndexed { index, (label, icon) ->
+                    val isSelected = !showProfileScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
                     NavigationBarItem(
-                        selected = selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null,
+                        selected = isSelected,
                         onClick = {
+                            showProfileScreen = false
                             selectedBottomNavIndex = index
                             selectedCategory = null
                             selectedListingDetail = null
                         },
-                        icon = { Icon(icon, contentDescription = label) },
-                        label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                        icon = {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = label,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            selectedIconColor = Color(0xFFFFD54F),
+                            selectedTextColor = Color(0xFFFFD54F),
+                            unselectedIconColor = Color.White.copy(alpha = 0.7f),
+                            unselectedTextColor = Color.White.copy(alpha = 0.7f),
+                            indicatorColor = Color(0xFFFFD54F).copy(alpha = 0.22f)
                         )
                     )
                 }
@@ -188,113 +270,367 @@ fun HomeScreen(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
+                .padding(innerPadding)
         ) {
-            when {
-                selectedListingDetail != null -> {
-                    ListingDetailScreen(
-                        listing = selectedListingDetail!!,
-                        onBackClick = { selectedListingDetail = null }
-                    )
-                }
-                selectedCategory != null -> {
-                    ListingListScreen(
-                        category = selectedCategory!!,
-                        viewModel = listingViewModel,
-                        onBackClick = { selectedCategory = null },
-                        onListingClick = { listing -> selectedListingDetail = listing },
-                        onAddListingClick = {
-                            selectedCategory = null
-                            selectedBottomNavIndex = 2
-                        }
-                    )
-                }
-                selectedBottomNavIndex == 2 -> {
-                    AddListingScreen(
-                        viewModel = listingViewModel,
-                        authViewModel = viewModel,
-                        onSuccess = { postedCategory ->
-                            selectedCategory = postedCategory
-                            selectedBottomNavIndex = 0
-                        }
-                    )
-                }
-                selectedBottomNavIndex == 4 -> {
-                    ProfileScreen(
-                        viewModel = viewModel,
-                        onSignOut = onSignOut
-                    )
-                }
-                else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search anything...", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            trailingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(28.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorfulGradient)
+            ) {
+                when {
+                    showProfileScreen -> {
+                        ProfileScreen(
+                            viewModel = viewModel,
+                            onSignOut = onSignOut
                         )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                    }
+                    selectedListingDetail != null -> {
+                        ListingDetailScreen(
+                            listing = selectedListingDetail!!,
+                            onBackClick = { selectedListingDetail = null }
+                        )
+                    }
+                    selectedCategory != null -> {
+                        ListingListScreen(
+                            category = selectedCategory!!,
+                            viewModel = listingViewModel,
+                            onBackClick = { selectedCategory = null },
+                            onListingClick = { listing -> selectedListingDetail = listing },
+                            onAddListingClick = {
+                                selectedCategory = null
+                                selectedBottomNavIndex = 1
+                            }
+                        )
+                    }
+                    selectedBottomNavIndex == 1 -> {
+                        AddListingScreen(
+                            viewModel = listingViewModel,
+                            authViewModel = viewModel,
+                            onSuccess = { postedCategory ->
+                                selectedCategory = postedCategory
+                                selectedBottomNavIndex = 0
+                            }
+                        )
+                    }
+                    selectedBottomNavIndex == 3 -> {
+                        AboutCompanyScreen()
+                    }
+                    else -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp, vertical = 14.dp)
                         ) {
-                            items(categories) { category ->
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.clickable {
-                                        selectedCategory = category.title
-                                    }
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 18.dp)
+                                    .clickable { showProfileScreen = true },
+                                shape = RoundedCornerShape(22.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(18.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(86.dp)
-                                            .clip(RoundedCornerShape(18.dp))
-                                            .background(MaterialTheme.colorScheme.surface)
-                                            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(18.dp)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = category.icon,
-                                            contentDescription = category.title,
-                                            tint = category.iconColor,
-                                            modifier = Modifier.size(36.dp)
+                                    if (userPhotoUrl != null) {
+                                        AsyncImage(
+                                            model = userPhotoUrl,
+                                            contentDescription = "User Photo",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(62.dp)
+                                                .clip(CircleShape)
+                                                .border(2.5.dp, Color(0xFF673AB7), CircleShape)
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(62.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFF673AB7).copy(alpha = 0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = null,
+                                                tint = Color(0xFF673AB7),
+                                                modifier = Modifier.size(34.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(16.dp))
+
+                                    Column {
+                                        Text(
+                                            text = "Welcome 👋",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF673AB7)
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = userName,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF1E1E2D)
                                         )
                                     }
+                                }
+                            }
 
-                                    Spacer(modifier = Modifier.height(8.dp))
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(3),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(categories) { category ->
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.clickable {
+                                            selectedCategory = category.title
+                                        }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(86.dp)
+                                                .clip(RoundedCornerShape(20.dp))
+                                                .background(category.bgColor)
+                                                .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(20.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = category.icon,
+                                                contentDescription = category.title,
+                                                tint = category.iconColor,
+                                                modifier = Modifier.size(38.dp)
+                                            )
+                                        }
 
-                                    Text(
-                                        text = category.title,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        textAlign = TextAlign.Center
-                                    )
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = category.title,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AboutCompanyScreen() {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(130.dp)
+                .clip(CircleShape)
+                .border(3.5.dp, Color.White, CircleShape)
+                .background(Color.White.copy(alpha = 0.25f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "K",
+                fontSize = 58.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Kaisar Ahmad Lone",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1E1E2D)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Android Developer",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF673AB7)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Developer of LovelyHub app",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF1E1E2D)
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(
+            text = "If you want any custom mobile application, website, or enterprise software solution developed, feel free to contact me.",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.DarkGray,
+            lineHeight = 20.sp
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.6f), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:lonekaisar15@gmail.com"))
+                    try { context.startActivity(intent) } catch (_: Exception) {}
+                }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "lonekaisar15@gmail.com",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E2D)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:9086455406"))
+                    try { context.startActivity(intent) } catch (_: Exception) {}
+                }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "9086455406",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E2D)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https:" + "/" + "/github.com/KaisarAhLone"))
+                    try { context.startActivity(intent) } catch (_: Exception) {}
+                }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "GitHub Profile",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E2D)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https:" + "/" + "/www.linkedin.com/in/kaisar-ah-lone-/"))
+                    try { context.startActivity(intent) } catch (_: Exception) {}
+                }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "LinkedIn Profile",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E2D)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.6f), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "View Portfolio",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF673AB7),
+            modifier = Modifier.clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https:" + "/" + "/github.com/KaisarAhLone"))
+                try { context.startActivity(intent) } catch (_: Exception) {}
+            }
+        )
+    }
+}
+
+@Composable
+fun DeveloperContactTile(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0E5FC))
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF673AB7)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E1E2D))
+                Text(subtitle, fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
+            }
+
+            Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
         }
     }
 }

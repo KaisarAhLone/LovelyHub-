@@ -1,11 +1,13 @@
 package com.example.lovelyhub.data.repository
 
 import android.content.Context
+import android.net.Uri
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
+import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.data.model.User
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -17,7 +19,8 @@ import kotlinx.coroutines.tasks.await
 
 class AuthRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val listingRepository: ListingRepository = ListingRepository()
 ) {
 
     val currentUser: FirebaseUser? get() = auth.currentUser
@@ -33,17 +36,28 @@ class AuthRepository(
     }
 
     suspend fun signUpWithEmail(
+        context: Context,
         name: String,
         email: String,
         password: String,
         role: String,
         businessName: String = "",
         businessPhone: String = "",
-        businessLocation: String = ""
+        businessLocation: String = "",
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false,
+        imageUri: Uri? = null
     ): Result<FirebaseUser> {
         return try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val user = authResult.user ?: return Result.failure(Exception("User creation failed"))
+
+            val encodedPhoto = if (imageUri != null) {
+                listingRepository.compressAndEncodeImage(context, imageUri)
+            } else {
+                ""
+            }
 
             val newUser = User(
                 uid = user.uid,
@@ -53,13 +67,46 @@ class AuthRepository(
                 businessName = businessName,
                 businessPhone = businessPhone,
                 businessLocation = businessLocation,
-                photoUrl = user.photoUrl?.toString() ?: ""
+                openTime = openTime,
+                closeTime = closeTime,
+                is24Hours = is24Hours,
+                photoUrl = encodedPhoto
             )
 
             firestore.collection("users")
                 .document(user.uid)
                 .set(newUser)
                 .await()
+
+            if (role != "Student" && businessName.isNotBlank()) {
+                val category = when (role) {
+                    "Restaurant Owner" -> "Restaurants"
+                    "Room / PG Owner" -> "Rooms"
+                    "Rental Provider" -> "Rentals"
+                    "Service Provider" -> "Services"
+                    else -> "Marketplace"
+                }
+
+                val shopListing = Listing(
+                    id = user.uid,
+                    category = category,
+                    title = businessName,
+                    price = if (is24Hours) "Open 24 Hours" else "Open: $openTime - $closeTime",
+                    phone = businessPhone,
+                    location = businessLocation,
+                    imageUrl = encodedPhoto,
+                    openTime = openTime,
+                    closeTime = closeTime,
+                    is24Hours = is24Hours,
+                    ownerUid = user.uid,
+                    status = "Open",
+                    isShop = true
+                )
+
+                try {
+                    firestore.collection("listings").document(user.uid).set(shopListing).await()
+                } catch (_: Exception) {}
+            }
 
             Result.success(user)
         } catch (e: Exception) {
@@ -147,6 +194,45 @@ class AuthRepository(
                 "photoUrl" to photoUrl
             )
             firestore.collection("users").document(uid).update(updates).await()
+
+            if (role != "Student" && businessName.isNotBlank()) {
+                val category = when (role) {
+                    "Restaurant Owner" -> "Restaurants"
+                    "Room / PG Owner" -> "Rooms"
+                    "Rental Provider" -> "Rentals"
+                    "Service Provider" -> "Services"
+                    else -> "Marketplace"
+                }
+
+                val shopUpdates = mutableMapOf<String, Any>(
+                    "title" to businessName,
+                    "phone" to businessPhone,
+                    "location" to businessLocation,
+                    "category" to category,
+                    "isShop" to true
+                )
+                if (photoUrl.isNotBlank()) {
+                    shopUpdates["imageUrl"] = photoUrl
+                }
+
+                try {
+                    firestore.collection("listings").document(uid).update(shopUpdates).await()
+                } catch (_: Exception) {
+                    val shopListing = Listing(
+                        id = uid,
+                        category = category,
+                        title = businessName,
+                        price = "Open for Business",
+                        phone = businessPhone,
+                        location = businessLocation,
+                        imageUrl = photoUrl,
+                        ownerUid = uid,
+                        status = "Open",
+                        isShop = true
+                    )
+                    firestore.collection("listings").document(uid).set(shopListing).await()
+                }
+            }
 
             val user = auth.currentUser
             if (user != null && email.isNotBlank() && email != user.email) {

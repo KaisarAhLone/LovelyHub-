@@ -1,7 +1,6 @@
 package com.example.lovelyhub.ui.listings
 
 import android.Manifest
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
@@ -36,6 +34,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -67,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -96,6 +96,15 @@ fun AddListingScreen(
     val role = userProfile?.role ?: "Student"
     val isStudent = role == "Student"
 
+    val colorfulGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF673AB7),
+            Color(0xFF00BCD4),
+            Color(0xFF00E676),
+            Color(0xFFFFB300)
+        )
+    )
+
     val defaultCat = when (role) {
         "Restaurant Owner" -> "Restaurants"
         "Room / PG Owner" -> "Rooms"
@@ -115,11 +124,15 @@ fun AddListingScreen(
     var selectedCategory by remember(categories, defaultCat) { mutableStateOf(defaultCat) }
     var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
 
-    var title by remember(userProfile) { mutableStateOf(userProfile?.businessName ?: "") }
+    val isBusinessCategory = selectedCategory.equals("Restaurants", ignoreCase = true) ||
+            selectedCategory.equals("Food", ignoreCase = true) ||
+            selectedCategory.equals("Rooms", ignoreCase = true) ||
+            selectedCategory.equals("Rentals", ignoreCase = true)
+
+    var itemName by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var phone by remember(userProfile) { mutableStateOf(userProfile?.businessPhone ?: "") }
     var location by remember(userProfile) { mutableStateOf(userProfile?.businessLocation ?: "") }
-    var menuInput by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var isFetchingLocation by remember { mutableStateOf(false) }
@@ -135,7 +148,7 @@ fun AddListingScreen(
                 scope.launch { snackbarHostState.showSnackbar("GPS Location detected!") }
             }
         } else {
-            scope.launch { snackbarHostState.showSnackbar("Location permission required for GPS") }
+            scope.launch { snackbarHostState.showSnackbar("Location permission required") }
         }
     }
 
@@ -143,12 +156,6 @@ fun AddListingScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: Exception) {}
             imageUri = uri
         }
     }
@@ -158,23 +165,26 @@ fun AddListingScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "ADD NEW LISTING",
-                        fontWeight = FontWeight.Bold,
+                        text = "ADD ITEM",
+                        fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF673AB7))
             )
         }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
+                .padding(innerPadding)
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorfulGradient)
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -186,7 +196,7 @@ fun AddListingScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
                             border = BorderStroke(1.dp, Color(0xFFFFB74D))
                         ) {
@@ -210,12 +220,38 @@ fun AddListingScreen(
                                 )
                             }
                         }
+                    } else if (userProfile?.businessName?.isNotBlank() == true) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Storefront,
+                                        contentDescription = null,
+                                        tint = Color(0xFF673AB7),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = userProfile?.businessName ?: "My Shop",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF673AB7)
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                     ) {
                         Column(
@@ -227,7 +263,7 @@ fun AddListingScreen(
                                 text = "Category",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color(0xFF1E1E2D)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
@@ -236,10 +272,10 @@ fun AddListingScreen(
                                     value = selectedCategory,
                                     onValueChange = {},
                                     readOnly = true,
-                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFF673AB7)) },
                                     trailingIcon = {
                                         IconButton(onClick = { isCategoryDropdownExpanded = true }) {
-                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
@@ -269,17 +305,17 @@ fun AddListingScreen(
                                 text = "Photo",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color(0xFF1E1E2D)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(150.dp)
+                                    .height(160.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                                    .background(Color(0xFFF0E5FC))
+                                    .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                                     .clickable { imagePickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -295,15 +331,15 @@ fun AddListingScreen(
                                         Icon(
                                             imageVector = Icons.Default.CameraAlt,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(38.dp)
+                                            tint = Color(0xFF673AB7),
+                                            modifier = Modifier.size(42.dp)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "Upload Image / Photo",
+                                            text = "Upload Photo",
                                             fontSize = 13.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.primary
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF673AB7)
                                         )
                                     }
                                 }
@@ -312,136 +348,133 @@ fun AddListingScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             OutlinedTextField(
-                                value = title,
-                                onValueChange = { title = it },
-                                label = { Text("Shop / Item Name (e.g. Zaika Restro)") },
-                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                value = itemName,
+                                onValueChange = { itemName = it },
+                                label = { Text("Item Name") },
+                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF673AB7)) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             OutlinedTextField(
                                 value = price,
                                 onValueChange = { price = it },
-                                label = { Text("Starting Price (e.g. ₹180 or ₹5000/month)") },
-                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                label = { Text("Price") },
+                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = if (isBusinessCategory) ImeAction.Done else ImeAction.Next),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            if (!isBusinessCategory) {
+                                Spacer(modifier = Modifier.height(14.dp))
 
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = location,
+                                        onValueChange = { location = it },
+                                        label = { Text("Location") },
+                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                MapLocationHelper.openMapPicker(context, location)
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                locationPermissionLauncher.launch(
+                                                    arrayOf(
+                                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                                    )
+                                                )
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            if (isFetchingLocation) {
+                                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
+                                            } else {
+                                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
                                 OutlinedTextField(
-                                    value = location,
-                                    onValueChange = { location = it },
-                                    label = { Text("Campus / Shop Location") },
-                                    leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                    value = phone,
+                                    onValueChange = { phone = it },
+                                    label = { Text("Phone Number") },
+                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
                                 )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            MapLocationHelper.openMapPicker(context, location)
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            locationPermissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                                )
-                                            )
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        if (isFetchingLocation) {
-                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.primary)
-                                        } else {
-                                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Current GPS", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                                        }
-                                    }
-                                }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            OutlinedTextField(
-                                value = phone,
-                                onValueChange = { phone = it },
-                                label = { Text("Contact Phone Number") },
-                                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            OutlinedTextField(
-                                value = menuInput,
-                                onValueChange = { menuInput = it },
-                                label = { Text("Menu / Offerings Items (comma separated)") },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(26.dp))
 
                             Button(
                                 onClick = {
-                                    if (title.isBlank() || price.isBlank() || phone.isBlank()) {
-                                        scope.launch { snackbarHostState.showSnackbar("Please enter Name, Price and Phone Number") }
+                                    if (itemName.isBlank() || price.isBlank()) {
+                                        scope.launch { snackbarHostState.showSnackbar("Please enter Item Name and Price") }
                                         return@Button
                                     }
 
                                     isLoading = true
                                     val postedCat = selectedCategory
-                                    val menuList = menuInput.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+                                    val finalPhone = if (isBusinessCategory) (userProfile?.businessPhone ?: "") else phone
+                                    val finalLocation = if (isBusinessCategory) (userProfile?.businessLocation ?: "") else location
+                                    val finalOpenTime = userProfile?.openTime.takeIf { !it.isNullOrBlank() } ?: "09:00 AM"
+                                    val finalCloseTime = userProfile?.closeTime.takeIf { !it.isNullOrBlank() } ?: "10:00 PM"
+                                    val final24Hours = userProfile?.is24Hours ?: false
 
                                     val newListing = Listing(
                                         category = postedCat,
-                                        title = title,
+                                        title = itemName,
                                         price = price,
-                                        phone = phone,
-                                        location = location,
-                                        menuItems = menuList
+                                        phone = finalPhone,
+                                        location = finalLocation,
+                                        openTime = finalOpenTime,
+                                        closeTime = finalCloseTime,
+                                        is24Hours = final24Hours
                                     )
 
                                     viewModel.postListing(context, newListing, imageUri) { error ->
                                         isLoading = false
                                         if (error == null) {
-                                            title = ""
+                                            itemName = ""
                                             price = ""
-                                            phone = ""
-                                            location = ""
-                                            menuInput = ""
                                             imageUri = null
+                                            scope.launch { snackbarHostState.showSnackbar("Item added successfully!") }
                                             onSuccess(postedCat)
                                         } else {
                                             scope.launch { snackbarHostState.showSnackbar(error) }
@@ -449,7 +482,7 @@ fun AddListingScreen(
                                     }
                                 },
                                 enabled = !isLoading,
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -460,7 +493,7 @@ fun AddListingScreen(
                                 } else {
                                     Icon(Icons.Default.Add, contentDescription = null)
                                     Spacer(modifier = Modifier.size(8.dp))
-                                    Text("Post Listing Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Text("Add", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 }
                             }
                         }

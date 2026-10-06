@@ -6,6 +6,7 @@ data class Listing(
     val title: String = "",
     val price: String = "",
     val phone: String = "",
+    val whatsApp: String = "",
     val location: String = "",
     val imageUrl: String = "",
     val status: String = "Open",

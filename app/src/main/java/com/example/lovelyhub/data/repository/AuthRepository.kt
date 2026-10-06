@@ -43,6 +43,7 @@ class AuthRepository(
         role: String,
         businessName: String = "",
         businessPhone: String = "",
+        businessWhatsApp: String = "",
         businessLocation: String = "",
         openTime: String = "09:00 AM",
         closeTime: String = "10:00 PM",
@@ -59,6 +60,8 @@ class AuthRepository(
                 ""
             }
 
+            val finalWhatsApp = businessWhatsApp.ifBlank { businessPhone }
+
             val newUser = User(
                 uid = user.uid,
                 name = name,
@@ -66,6 +69,7 @@ class AuthRepository(
                 role = role,
                 businessName = businessName,
                 businessPhone = businessPhone,
+                businessWhatsApp = finalWhatsApp,
                 businessLocation = businessLocation,
                 openTime = openTime,
                 closeTime = closeTime,
@@ -93,6 +97,7 @@ class AuthRepository(
                     title = businessName,
                     price = if (is24Hours) "Open 24 Hours" else "Open: $openTime - $closeTime",
                     phone = businessPhone,
+                    whatsApp = finalWhatsApp,
                     location = businessLocation,
                     imageUrl = encodedPhoto,
                     openTime = openTime,

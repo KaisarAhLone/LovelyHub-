@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HomeWork
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Person
@@ -81,6 +82,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.ui.auth.AuthViewModel
+import com.example.lovelyhub.ui.chats.ChatDetailScreen
+import com.example.lovelyhub.ui.chats.ChatListScreen
+import com.example.lovelyhub.ui.chats.ChatViewModel
 import com.example.lovelyhub.ui.listings.AddListingScreen
 import com.example.lovelyhub.ui.listings.ListingDetailScreen
 import com.example.lovelyhub.ui.listings.ListingListScreen
@@ -94,17 +98,25 @@ data class HomeCategoryItem(
     val bgColor: Color
 )
 
+data class ActiveChatTarget(
+    val receiverUid: String,
+    val receiverName: String,
+    val receiverPhotoUrl: String = ""
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: AuthViewModel,
     listingViewModel: ListingViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel(),
     onSignOut: () -> Unit
 ) {
     var selectedBottomNavIndex by remember { mutableStateOf(0) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedListingDetail by remember { mutableStateOf<Listing?>(null) }
     var showProfileScreen by remember { mutableStateOf(false) }
+    var activeChatTarget by remember { mutableStateOf<ActiveChatTarget?>(null) }
 
     val userProfile by viewModel.currentUserProfile.collectAsState()
     val currentUser = viewModel.currentUser
@@ -112,8 +124,11 @@ fun HomeScreen(
     val userPhotoUrl = userProfile?.photoUrl?.ifBlank { null } ?: currentUser?.photoUrl?.toString()
     val userName = userProfile?.name?.ifBlank { null } ?: currentUser?.displayName ?: "Campus Student"
 
-    BackHandler(enabled = showProfileScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+    BackHandler(enabled = activeChatTarget != null || showProfileScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
         when {
+            activeChatTarget != null -> {
+                activeChatTarget = null
+            }
             showProfileScreen -> {
                 showProfileScreen = false
             }
@@ -154,7 +169,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            if (!showProfileScreen && selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
+            if (activeChatTarget == null && !showProfileScreen && selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
                 TopAppBar(
                     title = {
                         Box(
@@ -232,10 +247,11 @@ fun HomeScreen(
                 )
 
                 navItems.forEachIndexed { index, (label, icon) ->
-                    val isSelected = !showProfileScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
+                    val isSelected = activeChatTarget == null && !showProfileScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
+                            activeChatTarget = null
                             showProfileScreen = false
                             selectedBottomNavIndex = index
                             selectedCategory = null
@@ -278,6 +294,16 @@ fun HomeScreen(
                     .background(colorfulGradient)
             ) {
                 when {
+                    activeChatTarget != null -> {
+                        val target = activeChatTarget!!
+                        ChatDetailScreen(
+                            receiverUid = target.receiverUid,
+                            receiverName = target.receiverName,
+                            receiverPhotoUrl = target.receiverPhotoUrl,
+                            viewModel = chatViewModel,
+                            onBackClick = { activeChatTarget = null }
+                        )
+                    }
                     showProfileScreen -> {
                         ProfileScreen(
                             viewModel = viewModel,
@@ -287,7 +313,14 @@ fun HomeScreen(
                     selectedListingDetail != null -> {
                         ListingDetailScreen(
                             listing = selectedListingDetail!!,
-                            onBackClick = { selectedListingDetail = null }
+                            onBackClick = { selectedListingDetail = null },
+                            onMessageClick = { receiverUid, receiverName, receiverPhotoUrl ->
+                                activeChatTarget = ActiveChatTarget(receiverUid, receiverName, receiverPhotoUrl)
+                            },
+                            onSendOrderClick = { receiverUid, receiverName, receiverPhotoUrl, orderText ->
+                                chatViewModel.sendMessage(receiverUid, orderText)
+                                activeChatTarget = ActiveChatTarget(receiverUid, receiverName, receiverPhotoUrl)
+                            }
                         )
                     }
                     selectedCategory != null -> {
@@ -309,6 +342,14 @@ fun HomeScreen(
                             onSuccess = { postedCategory ->
                                 selectedCategory = postedCategory
                                 selectedBottomNavIndex = 0
+                            }
+                        )
+                    }
+                    selectedBottomNavIndex == 2 -> {
+                        ChatListScreen(
+                            viewModel = chatViewModel,
+                            onConversationClick = { conv ->
+                                activeChatTarget = ActiveChatTarget(conv.otherUid, conv.otherName, conv.otherPhotoUrl)
                             }
                         )
                     }
@@ -547,7 +588,7 @@ fun AboutCompanyScreen() {
                 .padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Link, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = "GitHub Profile",
@@ -567,7 +608,7 @@ fun AboutCompanyScreen() {
                 .padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Link, contentDescription = null, tint = Color(0xFF1E1E2D), modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = "LinkedIn Profile",
@@ -591,46 +632,5 @@ fun AboutCompanyScreen() {
                 try { context.startActivity(intent) } catch (_: Exception) {}
             }
         )
-    }
-}
-
-@Composable
-fun DeveloperContactTile(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0E5FC))
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF673AB7)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(18.dp))
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E1E2D))
-                Text(subtitle, fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
-            }
-
-            Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-        }
     }
 }

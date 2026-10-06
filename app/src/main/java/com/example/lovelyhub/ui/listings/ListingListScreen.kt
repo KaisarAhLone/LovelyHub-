@@ -50,8 +50,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -97,7 +95,7 @@ fun ListingListScreen(
             Color(0xFF673AB7),
             Color(0xFF00BCD4),
             Color(0xFF00E676),
-            Color(0xFFFFB300)
+            Color(0xFF1DE9B6)
         )
     )
 
@@ -106,24 +104,26 @@ fun ListingListScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFF673AB7)
+        containerColor = Color.Transparent
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(bottom = innerPadding.calculateBottomPadding()),
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(colorfulGradient)
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF673AB7))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(horizontal = 12.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
@@ -137,7 +137,7 @@ fun ListingListScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
                         Text(
                             text = category,
@@ -187,7 +187,7 @@ fun ListingListScreen(
                                     }
                                 } else {
                                     LazyColumn(
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         items(items) { listing ->
@@ -276,10 +276,12 @@ fun ListingCardItem(
 
     val priceDisplay = if (listing.price.startsWith("Open", ignoreCase = true)) {
         "Starting ₹100"
+    } else if (listing.price.startsWith("₹")) {
+        "Starting ${listing.price}"
     } else if (listing.price.contains("Starting", ignoreCase = true)) {
         listing.price
     } else {
-        "Starting ${listing.price}"
+        "Starting ₹${listing.price}"
     }
 
     Card(
@@ -294,7 +296,7 @@ fun ListingCardItem(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp)
+                    .height(160.dp)
             ) {
                 if (listing.imageUrl.isNotBlank()) {
                     ListingImage(
@@ -364,7 +366,7 @@ fun ListingCardItem(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -414,7 +416,7 @@ fun ListingCardItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

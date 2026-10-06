@@ -7,6 +7,7 @@ data class User(
     val role: String = "Student",
     val businessName: String = "",
     val businessPhone: String = "",
+    val businessWhatsApp: String = "",
     val businessLocation: String = "",
     val openTime: String = "09:00 AM",
     val closeTime: String = "10:00 PM",

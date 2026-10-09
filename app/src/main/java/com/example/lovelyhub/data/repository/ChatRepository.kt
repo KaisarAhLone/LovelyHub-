@@ -36,6 +36,7 @@ class ChatRepository(
             senderUid = senderUid,
             receiverUid = receiverUid,
             messageText = messageText.trim(),
+            read = false,
             timestamp = System.currentTimeMillis()
         )
 
@@ -77,6 +78,18 @@ class ChatRepository(
                 if (snapshot != null) {
                     val messages = snapshot.toObjects(ChatMessage::class.java)
                     trySend(messages)
+
+                    repositoryScope.launch {
+                        for (doc in snapshot.documents) {
+                            val msgReceiver = doc.getString("receiverUid") ?: ""
+                            val isRead = doc.getBoolean("read") ?: false
+                            if (msgReceiver == senderUid && !isRead) {
+                                try {
+                                    doc.reference.update("read", true).await()
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    }
                 }
             }
 
@@ -121,6 +134,16 @@ class ChatRepository(
                                         ?: userDoc.getString("name")
                                         ?: "Campus User"
                                     val photo = userDoc.getString("photoUrl") ?: ""
+                                    val phone = userDoc.getString("businessPhone").takeIf { !it.isNullOrBlank() } ?: ""
+                                    val whatsApp = userDoc.getString("businessWhatsApp").takeIf { !it.isNullOrBlank() } ?: phone
+
+                                    val unreadDocs = firestore.collection("chats")
+                                        .document(chatId)
+                                        .collection("messages")
+                                        .whereEqualTo("receiverUid", currentUid)
+                                        .whereEqualTo("read", false)
+                                        .get()
+                                        .await()
 
                                     conversations.add(
                                         ChatConversation(
@@ -128,7 +151,10 @@ class ChatRepository(
                                             otherUid = otherUid,
                                             otherName = name,
                                             otherPhotoUrl = photo,
+                                            otherPhone = phone,
+                                            otherWhatsApp = whatsApp,
                                             lastMessage = lastMsg,
+                                            unreadCount = unreadDocs.size(),
                                             timestamp = time
                                         )
                                     )

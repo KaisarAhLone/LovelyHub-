@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,7 +37,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -63,7 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.lovelyhub.data.model.ChatMessage
 import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.components.MapLocationHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -183,8 +182,7 @@ fun ChatDetailScreen(
                                 OrderCardBubble(
                                     context = context,
                                     rawText = msg.messageText,
-                                    formattedTime = formattedTime,
-                                    isMe = isMe
+                                    formattedTime = formattedTime
                                 )
                             } else {
                                 Row(
@@ -283,8 +281,7 @@ fun ChatDetailScreen(
 fun OrderCardBubble(
     context: Context,
     rawText: String,
-    formattedTime: String,
-    isMe: Boolean
+    formattedTime: String
 ) {
     val lines = rawText.split("\n")
     val itemLines = lines.filter { it.trim().startsWith("•") }
@@ -295,9 +292,27 @@ fun OrderCardBubble(
     val pgLine = lines.firstOrNull { it.contains("PG/Hostel:") }?.replace("🏠 PG/Hostel:", "")?.trim() ?: ""
     val locationLine = lines.firstOrNull { it.contains("Location:") }?.replace("📍 Location:", "")?.trim() ?: ""
 
+    fun sendOrderToWhatsApp() {
+        val cleanNum = phoneLine.replace(Regex("[^0-9]"), "")
+        val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
+
+        val cleanMsgForWA = rawText.replace(Regex("\\[IMAGE:.*?\\]"), "")
+        val encodedMsg = Uri.encode(cleanMsgForWA)
+
+        val waUri = Uri.parse("https:" + "/" + "/api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
+        val intent = Intent(Intent.ACTION_VIEW, waUri)
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            val fallbackUri = Uri.parse("https:" + "/" + "/wa.me/$fullNum?text=$encodedMsg")
+            val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
+            try { context.startActivity(fallbackIntent) } catch (_: Exception) {}
+        }
+    }
+
     Card(
         modifier = Modifier
-            .fillMaxWidth(0.92f)
+            .fillMaxWidth()
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.98f)),
@@ -430,6 +445,21 @@ fun OrderCardBubble(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            Button(
+                onClick = { sendOrderToWhatsApp() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(42.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+            ) {
+                Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Forward Order on WhatsApp 📲", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -448,7 +478,7 @@ fun OrderCardBubble(
                     ) {
                         Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Call Customer", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -458,7 +488,7 @@ fun OrderCardBubble(
                             MapLocationHelper.openMapDirections(context, locationLine)
                         },
                         modifier = Modifier
-                            .weight(1.4f)
+                            .weight(1.3f)
                             .height(40.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))

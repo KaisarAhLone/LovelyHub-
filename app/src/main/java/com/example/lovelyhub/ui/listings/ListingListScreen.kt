@@ -264,6 +264,8 @@ fun ListingCardItem(
     onDeleteClick: () -> Unit
 ) {
     val isOpen = listing.status.equals("Open", ignoreCase = true)
+    val isRoomOrRental = listing.category.equals("Rooms", ignoreCase = true) || listing.category.equals("Rentals", ignoreCase = true)
+    val isJob = listing.category.equals("Jobs", ignoreCase = true)
     val cardBg = if (isOpen) Color.White.copy(alpha = 0.95f) else Color(0xFFEEEEEE).copy(alpha = 0.95f)
 
     fun cleanLocationName(rawLocation: String): String {
@@ -281,7 +283,7 @@ fun ListingCardItem(
     } else if (listing.price.contains("Starting", ignoreCase = true)) {
         listing.price
     } else {
-        "Starting ₹${listing.price}"
+        "Pay: ${listing.price}"
     }
 
     Card(
@@ -293,80 +295,120 @@ fun ListingCardItem(
         elevation = CardDefaults.cardElevation(defaultElevation = if (isOpen) 4.dp else 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-            ) {
-                if (listing.imageUrl.isNotBlank()) {
-                    ListingImage(
-                        imageUrl = listing.imageUrl,
-                        contentDescription = listing.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    val icon = when (listing.category) {
-                        "Restaurants", "Food" -> Icons.Default.Restaurant
-                        "Rooms" -> Icons.Default.HomeWork
-                        "Rentals" -> Icons.Default.DirectionsCar
-                        "Jobs" -> Icons.Default.Work
-                        "Marketplace" -> Icons.Default.ShoppingBag
-                        else -> Icons.Default.Storefront
+            if (isJob) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF7B1FA2))
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Work, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("CAMPUS JOB OFFER", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable { onFavoriteToggle() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                ) {
+                    if (listing.imageUrl.isNotBlank()) {
+                        val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                        ListingImage(
+                            imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
+                            contentDescription = listing.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        val icon = when (listing.category) {
+                            "Restaurants", "Food" -> Icons.Default.Restaurant
+                            "Rooms" -> Icons.Default.HomeWork
+                            "Rentals" -> Icons.Default.DirectionsCar
+                            "Jobs" -> Icons.Default.Work
+                            "Marketplace" -> Icons.Default.ShoppingBag
+                            else -> Icons.Default.Storefront
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = Color(0xFF673AB7),
+                                modifier = Modifier.size(52.dp)
+                            )
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .clickable { onFavoriteToggle() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = Color(0xFF673AB7),
-                            modifier = Modifier.size(52.dp)
+                            imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .clickable { onFavoriteToggle() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .background(Color(0xFF1565C0).copy(alpha = 0.88f))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (listing.is24Hours) "⚡ Open 24 Hours • Free Delivery" else "⏰ Open: ${listing.openTime} - ${listing.closeTime}",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (!isRoomOrRental) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .background(Color(0xFF1565C0).copy(alpha = 0.88f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (listing.is24Hours) "⚡ Open 24 Hours • Free Delivery" else "⏰ Open: ${listing.openTime} - ${listing.closeTime}",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -375,7 +417,7 @@ fun ListingCardItem(
                 ) {
                     Text(
                         text = listing.title,
-                        fontSize = 16.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF1E1E2D),
                         modifier = Modifier.weight(1f)
@@ -403,7 +445,7 @@ fun ListingCardItem(
                 }
 
                 if (displayLocation.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(2.dp))
@@ -416,37 +458,27 @@ fun ListingCardItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = priceDisplay,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFD84315)
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (isOpen) Color(0xFF2E7D32).copy(alpha = 0.15f) else Color(0xFFC62828).copy(alpha = 0.15f))
-                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                    if (!isRoomOrRental) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = if (isOpen) "OPEN" else "CLOSED",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isOpen) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                text = priceDisplay,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFD84315)
                             )
                         }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
                     }
 
                     Row(
@@ -466,7 +498,7 @@ fun ListingCardItem(
 
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF673AB7))
                                 .clickable { onCallClick() },
@@ -476,7 +508,7 @@ fun ListingCardItem(
                                 imageVector = Icons.Default.Call,
                                 contentDescription = "Call",
                                 tint = Color.White,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }

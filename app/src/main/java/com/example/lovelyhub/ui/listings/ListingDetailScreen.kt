@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -43,6 +47,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
@@ -85,6 +90,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.components.MapLocationHelper
@@ -110,15 +116,28 @@ fun ListingDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val isRoomCategory = listing.category.equals("Rooms", ignoreCase = true)
+    val isRentalCategory = listing.category.equals("Rentals", ignoreCase = true)
+    val isJobCategory = listing.category.equals("Jobs", ignoreCase = true)
+    val isNoCartCategory = isRoomCategory || isRentalCategory || isJobCategory
+
     val cart = remember { mutableStateListOf<LocalCartItem>() }
     var showCartDialog by remember { mutableStateOf(false) }
     var showCheckoutDialog by remember { mutableStateOf(false) }
+    var expandedImageUrl by remember { mutableStateOf<String?>(null) }
 
     var custName by remember { mutableStateOf("") }
     var custPhone by remember { mutableStateOf("") }
     var custPgName by remember { mutableStateOf("") }
     var custLocation by remember { mutableStateOf("") }
     var isFetchingGps by remember { mutableStateOf(false) }
+
+    val sectionTitle = when {
+        isRoomCategory -> "Available Rooms"
+        isRentalCategory -> "Available Vehicles"
+        isJobCategory -> "Job Description & Requirements"
+        else -> "Food Menu & Dishes"
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -163,7 +182,7 @@ fun ListingDetailScreen(
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (cart.isNotEmpty()) {
+            if (!isNoCartCategory && cart.isNotEmpty()) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,72 +264,113 @@ fun ListingDetailScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                            ) {
-                                if (listing.imageUrl.isNotBlank()) {
-                                    ListingImage(
-                                        imageUrl = listing.imageUrl,
-                                        contentDescription = listing.title,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    val icon = when (listing.category) {
-                                        "Restaurants", "Food" -> Icons.Default.Restaurant
-                                        "Rooms" -> Icons.Default.HomeWork
-                                        "Rentals" -> Icons.Default.DirectionsCar
-                                        "Jobs" -> Icons.Default.Work
-                                        "Marketplace" -> Icons.Default.ShoppingBag
-                                        else -> Icons.Default.Storefront
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(Color(0xFFF0E5FC)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            tint = Color(0xFF673AB7),
-                                            modifier = Modifier.size(64.dp)
+                            if (isJobCategory) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF7B1FA2))
+                                        .padding(18.dp)
+                                ) {
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Work, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("CAMPUS JOB OFFER", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = listing.title,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White
+                                        )
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Text(
+                                            text = "Pay: ${listing.price}",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFFFD54F)
                                         )
                                     }
                                 }
-
+                            } else {
                                 Box(
                                     modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(10.dp)
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.Black.copy(alpha = 0.5f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = "Favorite",
-                                        tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomStart)
                                         .fillMaxWidth()
-                                        .background(Color(0xFF1565C0).copy(alpha = 0.88f))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .height(200.dp)
                                 ) {
-                                    Text(
-                                        text = if (listing.is24Hours) "⚡ Open 24 Hours • Free Delivery" else "⏰ Open: ${listing.openTime} - ${listing.closeTime}",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    if (listing.imageUrl.isNotBlank()) {
+                                        val topPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                                        val mainPhoto = topPhotos.firstOrNull() ?: listing.imageUrl
+                                        ListingImage(
+                                            imageUrl = mainPhoto,
+                                            contentDescription = listing.title,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clickable { expandedImageUrl = mainPhoto }
+                                        )
+                                    } else {
+                                        val icon = when (listing.category) {
+                                            "Restaurants", "Food" -> Icons.Default.Restaurant
+                                            "Rooms" -> Icons.Default.HomeWork
+                                            "Rentals" -> Icons.Default.DirectionsCar
+                                            "Jobs" -> Icons.Default.Work
+                                            "Marketplace" -> Icons.Default.ShoppingBag
+                                            else -> Icons.Default.Storefront
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFFF0E5FC)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                tint = Color(0xFF673AB7),
+                                                modifier = Modifier.size(64.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(10.dp)
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.Black.copy(alpha = 0.5f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                            contentDescription = "Favorite",
+                                            tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+
+                                    if (!isNoCartCategory) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomStart)
+                                                .fillMaxWidth()
+                                                .background(Color(0xFF1565C0).copy(alpha = 0.88f))
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Text(
+                                                text = if (listing.is24Hours) "⚡ Open 24 Hours • Free Service" else "⏰ Open: ${listing.openTime} - ${listing.closeTime}",
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -319,39 +379,41 @@ fun ListingDetailScreen(
                                     .fillMaxWidth()
                                     .padding(16.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = listing.title,
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF1E1E2D),
-                                        modifier = Modifier.weight(1f)
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFF2E7D32))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                if (!isJobCategory) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                Icons.Default.Star,
-                                                contentDescription = null,
-                                                tint = Color(0xFFFFD54F),
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = listing.rating.ifBlank { "4.3" },
-                                                color = Color.White,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                        Text(
+                                            text = listing.title,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF1E1E2D),
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color(0xFF2E7D32))
+                                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    Icons.Default.Star,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFD54F),
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = listing.rating.ifBlank { "4.3" },
+                                                    color = Color.White,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -373,24 +435,6 @@ fun ListingDetailScreen(
                                             fontWeight = FontWeight.Medium
                                         )
                                     }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.AccessTime,
-                                        contentDescription = null,
-                                        tint = Color(0xFF673AB7),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (listing.is24Hours) "Open 24 Hours" else "${listing.openTime} - ${listing.closeTime}",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF673AB7)
-                                    )
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -417,7 +461,7 @@ fun ListingDetailScreen(
                                     ) {
                                         Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Call", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text(if (isJobCategory) "Call Employer" else "Call", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
 
                                     Button(
@@ -458,220 +502,380 @@ fun ListingDetailScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.List,
-                                    contentDescription = null,
-                                    tint = Color(0xFF673AB7),
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "FOOD MENU & DISHES",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF1E1E2D)
-                                )
-                            }
+                    if (isJobCategory) {
+                        val jobItemText = listing.menuItems.firstOrNull() ?: ""
+                        val jobParts = jobItemText.split("|")
+                        val jobDescription = jobParts.firstOrNull()?.ifBlank { "Immediate opening for campus students. Contact employer directly." } ?: "Immediate opening for campus students."
+                        val jobHours = if (jobParts.size > 1) jobParts[1] else "Flexible Timings"
 
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF673AB7))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "${listing.menuItems.size} Items",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (listing.menuItems.isEmpty()) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
                                 Text(
-                                    text = "No dishes added yet by ${listing.title}.",
+                                    text = "Job Details & Requirements",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF673AB7)
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Work Timings: $jobHours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFFD84315), modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Salary: ${listing.price}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD84315))
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Description:",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E1E2D)
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = jobDescription,
                                     fontSize = 14.sp,
                                     color = Color.DarkGray,
-                                    fontWeight = FontWeight.Medium
+                                    lineHeight = 20.sp
                                 )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (listing.ownerUid.isNotBlank()) {
+                                            onMessageClick(listing.ownerUid, listing.title, listing.imageUrl)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Apply & Chat with Employer 💬", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     } else {
-                        listing.menuItems.forEach { itemEntry ->
-                            val parts = itemEntry.split("|")
-                            val titleAndPrice = parts[0]
-                            val dishPhoto = if (parts.size > 1) parts[1] else ""
+                        Text(
+                            text = sectionTitle,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
 
-                            val tpParts = titleAndPrice.split(" - ")
-                            val dishName = tpParts[0]
-                            val dishPrice = if (tpParts.size > 1) tpParts[1] else ""
-                            val priceVal = parsePriceNumber(dishPrice)
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                            val existingItem = cart.find { it.name == dishName }
-                            val currentQty = existingItem?.quantity ?: 0
-
+                        if (listing.menuItems.isEmpty()) {
                             Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
                             ) {
-                                Row(
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = dishName,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF1E1E2D)
-                                        )
+                                    Text(
+                                        text = "No options added yet by ${listing.title}.",
+                                        fontSize = 14.sp,
+                                        color = Color.DarkGray,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        } else {
+                            listing.menuItems.forEach { itemEntry ->
+                                val parts = itemEntry.split("|")
+                                val titleAndPrice = parts[0]
+                                val itemPhotoString = if (parts.size > 1) parts[1] else ""
+                                val facilitiesPart = if (parts.size > 2) parts[2] else ""
 
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                val itemPhotos = itemPhotoString.split("~").filter { it.isNotBlank() }
 
-                                        Text(
-                                            text = dishPrice,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = Color(0xFF673AB7)
-                                        )
+                                val tpParts = titleAndPrice.split(" - ")
+                                val itemTitle = tpParts[0]
+                                val itemPrice = if (tpParts.size > 1) tpParts[1] else ""
+                                val priceVal = parsePriceNumber(itemPrice)
 
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                val existingItem = cart.find { it.name == itemTitle }
+                                val currentQty = existingItem?.quantity ?: 0
 
-                                        Text(
-                                            text = "Freshly prepared at ${listing.title}",
-                                            fontSize = 11.sp,
-                                            color = Color.Gray
-                                        )
+                                if (isNoCartCategory) {
+                                    val roomFacilities = if (facilitiesPart.isNotBlank()) {
+                                        facilitiesPart.split(",").map { "• ${it.trim()}" }.filter { it.isNotBlank() }
+                                    } else {
+                                        listOf("• Wifi", "• Attached Bathroom", "• 24x7 Water", "• Furnished")
                                     }
 
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Box(contentAlignment = Alignment.BottomCenter) {
-                                        if (dishPhoto.isNotBlank()) {
-                                            ListingImage(
-                                                imageUrl = dishPhoto,
-                                                contentDescription = dishName,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .size(80.dp)
-                                                    .clip(RoundedCornerShape(14.dp))
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(80.dp)
-                                                    .clip(RoundedCornerShape(14.dp))
-                                                    .background(Color(0xFFF0E5FC)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Restaurant,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFF673AB7),
-                                                    modifier = Modifier.size(36.dp)
-                                                )
-                                            }
-                                        }
-
-                                        if (currentQty == 0) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFF673AB7))
-                                                    .clickable {
-                                                        cart.add(
-                                                            LocalCartItem(
-                                                                name = dishName,
-                                                                priceText = dishPrice,
-                                                                priceNum = priceVal,
-                                                                photoUrl = dishPhoto,
-                                                                quantity = 1
-                                                            )
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        ) {
+                                            if (itemPhotos.isNotEmpty()) {
+                                                LazyRow(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(150.dp)
+                                                        .clip(RoundedCornerShape(14.dp)),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    items(itemPhotos) { photo ->
+                                                        ListingImage(
+                                                            imageUrl = photo,
+                                                            contentDescription = itemTitle,
+                                                            contentScale = ContentScale.Crop,
+                                                            modifier = Modifier
+                                                                .fillMaxHeight()
+                                                                .width(220.dp)
+                                                                .clip(RoundedCornerShape(14.dp))
+                                                                .clickable { expandedImageUrl = photo }
                                                         )
                                                     }
-                                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                                    Spacer(modifier = Modifier.width(2.dp))
-                                                    Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                                                 }
+                                                Spacer(modifier = Modifier.height(12.dp))
                                             }
-                                        } else {
-                                            Row(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFF2E7D32))
-                                                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                IconButton(
-                                                    onClick = {
-                                                        val target = cart.find { it.name == dishName }
-                                                        if (target != null) {
-                                                            if (target.quantity > 1) {
-                                                                target.quantity -= 1
-                                                            } else {
-                                                                cart.remove(target)
-                                                            }
-                                                        }
-                                                    },
-                                                    modifier = Modifier.size(20.dp)
-                                                ) {
-                                                    Icon(Icons.Default.Remove, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                                }
+
+                                            Text(
+                                                text = itemTitle,
+                                                fontSize = 20.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF1E1E2D)
+                                            )
+
+                                            Spacer(modifier = Modifier.height(2.dp))
+
+                                            Text(
+                                                text = if (isRoomCategory) (if (itemPrice.contains("/")) itemPrice else "$itemPrice / month") else itemPrice,
+                                                fontSize = 17.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF673AB7)
+                                            )
+
+                                            if (isRoomCategory) {
+                                                Spacer(modifier = Modifier.height(10.dp))
 
                                                 Text(
-                                                    text = "$currentQty",
-                                                    color = Color.White,
-                                                    fontSize = 12.sp,
+                                                    text = "Facilities",
+                                                    fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                                    color = Color.DarkGray
                                                 )
 
-                                                IconButton(
-                                                    onClick = {
-                                                        val target = cart.find { it.name == dishName }
-                                                        target?.let { it.quantity += 1 }
-                                                    },
-                                                    modifier = Modifier.size(20.dp)
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                roomFacilities.forEach { fac ->
+                                                    Text(
+                                                        text = fac,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = Color(0xFF1E1E2D),
+                                                        modifier = Modifier.padding(vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(14.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                if (listing.phone.isNotBlank()) {
+                                                    Button(
+                                                        onClick = {
+                                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                            context.startActivity(intent)
+                                                        },
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .height(44.dp),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text("Call Owner", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+
+                                                if (listing.ownerUid.isNotBlank()) {
+                                                    Button(
+                                                        onClick = {
+                                                            onMessageClick(listing.ownerUid, listing.title, listing.imageUrl)
+                                                        },
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .height(44.dp),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text("Message", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 6.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(14.dp)
+                                        ) {
+                                            if (itemPhotos.isNotEmpty()) {
+                                                LazyRow(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(bottom = 10.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                                    items(itemPhotos) { photo ->
+                                                        ListingImage(
+                                                            imageUrl = photo,
+                                                            contentDescription = itemTitle,
+                                                            contentScale = ContentScale.Crop,
+                                                            modifier = Modifier
+                                                                .size(110.dp)
+                                                                .clip(RoundedCornerShape(12.dp))
+                                                                .clickable { expandedImageUrl = photo }
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = itemTitle,
+                                                        fontSize = 17.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = Color(0xFF1E1E2D)
+                                                    )
+
+                                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                                    Text(
+                                                        text = itemPrice,
+                                                        fontSize = 16.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = Color(0xFF673AB7)
+                                                    )
+                                                }
+
+                                                Box(contentAlignment = Alignment.BottomCenter) {
+                                                    if (currentQty == 0) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(8.dp))
+                                                                .background(Color(0xFF673AB7))
+                                                                .clickable {
+                                                                    cart.add(
+                                                                        LocalCartItem(
+                                                                            name = itemTitle,
+                                                                            priceText = itemPrice,
+                                                                            priceNum = priceVal,
+                                                                            photoUrl = itemPhotos.firstOrNull() ?: "",
+                                                                            quantity = 1
+                                                                        )
+                                                                    )
+                                                                }
+                                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                                        ) {
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                                                Spacer(modifier = Modifier.width(2.dp))
+                                                                Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                                            }
+                                                        }
+                                                    } else {
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(8.dp))
+                                                                .background(Color(0xFF2E7D32))
+                                                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            IconButton(
+                                                                onClick = {
+                                                                    val target = cart.find { it.name == itemTitle }
+                                                                    if (target != null) {
+                                                                        if (target.quantity > 1) {
+                                                                            target.quantity -= 1
+                                                                        } else {
+                                                                            cart.remove(target)
+                                                                        }
+                                                                    }
+                                                                },
+                                                                modifier = Modifier.size(20.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.Remove, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                                            }
+
+                                                            Text(
+                                                                text = "$currentQty",
+                                                                color = Color.White,
+                                                                fontSize = 12.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                modifier = Modifier.padding(horizontal = 4.dp)
+                                                            )
+
+                                                            IconButton(
+                                                                onClick = {
+                                                                    val target = cart.find { it.name == itemTitle }
+                                                                    target?.let { it.quantity += 1 }
+                                                                },
+                                                                modifier = Modifier.size(20.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -686,6 +890,40 @@ fun ListingDetailScreen(
                     hostState = snackbarHostState,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
                 )
+            }
+        }
+    }
+
+    if (expandedImageUrl != null) {
+        Dialog(onDismissRequest = { expandedImageUrl = null }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.92f))
+                    .clickable { expandedImageUrl = null },
+                contentAlignment = Alignment.Center
+            ) {
+                ListingImage(
+                    imageUrl = expandedImageUrl!!,
+                    contentDescription = "Room Photo Fullscreen",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+
+                IconButton(
+                    onClick = { expandedImageUrl = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.3f))
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                }
             }
         }
     }

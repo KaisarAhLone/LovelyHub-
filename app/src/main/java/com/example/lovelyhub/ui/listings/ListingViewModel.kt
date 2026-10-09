@@ -27,9 +27,6 @@ class ListingViewModel(
     private val _userListings = MutableStateFlow<List<Listing>>(emptyList())
     val userListings: StateFlow<List<Listing>> = _userListings.asStateFlow()
 
-    private val _selectedListing = MutableStateFlow<Listing?>(null)
-    val selectedListing: StateFlow<Listing?> = _selectedListing.asStateFlow()
-
     fun fetchListings(category: String) {
         viewModelScope.launch {
             _listingState.value = ListingState.Loading
@@ -42,20 +39,14 @@ class ListingViewModel(
         }
     }
 
+    suspend fun compressImageSync(context: Context, uri: Uri): String {
+        return repository.compressAndEncodeImage(context, uri)
+    }
+
     fun fetchUserListings() {
         viewModelScope.launch {
-            try {
-                _userListings.value = repository.getUserListings()
-            } catch (_: Exception) {}
+            _userListings.value = repository.getUserListings()
         }
-    }
-
-    fun selectListing(listing: Listing) {
-        _selectedListing.value = listing
-    }
-
-    fun clearSelectedListing() {
-        _selectedListing.value = null
     }
 
     fun postListing(context: Context, listing: Listing, imageUri: Uri?, onResult: (String?) -> Unit) {
@@ -67,24 +58,29 @@ class ListingViewModel(
                     onResult(null)
                 }
                 .onFailure { error ->
-                    onResult(error.localizedMessage ?: "Failed to add listing")
+                    onResult(error.localizedMessage ?: "Failed to post listing")
                 }
         }
     }
 
-    fun updateListing(context: Context, listing: Listing, newImageUri: Uri?, onComplete: () -> Unit) {
+    fun updateListing(context: Context, listing: Listing, newImageUri: Uri?, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             repository.updateListing(context, listing, newImageUri)
-            fetchListings(listing.category)
-            fetchUserListings()
-            onComplete()
+                .onSuccess {
+                    fetchListings(listing.category)
+                    fetchUserListings()
+                    onResult(null)
+                }
+                .onFailure { error ->
+                    onResult(error.localizedMessage ?: "Failed to update listing")
+                }
         }
     }
 
-    fun deleteListing(listingId: String, currentCategory: String, onComplete: () -> Unit) {
+    fun deleteListing(listingId: String, category: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             repository.deleteListing(listingId)
-            fetchListings(currentCategory)
+            fetchListings(category)
             fetchUserListings()
             onComplete()
         }

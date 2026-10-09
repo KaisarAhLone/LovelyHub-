@@ -39,11 +39,9 @@ import androidx.compose.material.icons.filled.HomeWork
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
@@ -115,7 +113,7 @@ fun HomeScreen(
     var selectedBottomNavIndex by remember { mutableStateOf(0) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedListingDetail by remember { mutableStateOf<Listing?>(null) }
-    var showProfileScreen by remember { mutableStateOf(false) }
+    var showAboutScreen by remember { mutableStateOf(false) }
     var activeChatTarget by remember { mutableStateOf<ActiveChatTarget?>(null) }
 
     val userProfile by viewModel.currentUserProfile.collectAsState()
@@ -124,13 +122,13 @@ fun HomeScreen(
     val userPhotoUrl = userProfile?.photoUrl?.ifBlank { null } ?: currentUser?.photoUrl?.toString()
     val userName = userProfile?.name?.ifBlank { null } ?: currentUser?.displayName ?: "Campus Student"
 
-    BackHandler(enabled = activeChatTarget != null || showProfileScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+    BackHandler(enabled = activeChatTarget != null || showAboutScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
         when {
             activeChatTarget != null -> {
                 activeChatTarget = null
             }
-            showProfileScreen -> {
-                showProfileScreen = false
+            showAboutScreen -> {
+                showAboutScreen = false
             }
             selectedListingDetail != null -> {
                 selectedListingDetail = null
@@ -161,15 +159,13 @@ fun HomeScreen(
             HomeCategoryItem("Jobs", Icons.Default.Work, Color(0xFF7B1FA2), Color.White.copy(alpha = 0.95f)),
             HomeCategoryItem("Marketplace", Icons.Default.Storefront, Color(0xFFC2185B), Color.White.copy(alpha = 0.95f)),
             HomeCategoryItem("Services", Icons.Default.Build, Color(0xFF2E7D32), Color.White.copy(alpha = 0.95f)),
-            HomeCategoryItem("Open Now", Icons.Default.Schedule, Color(0xFF00796B), Color.White.copy(alpha = 0.95f)),
-            HomeCategoryItem("Favorites", Icons.Default.Favorite, Color(0xFFD32F2F), Color.White.copy(alpha = 0.95f)),
-            HomeCategoryItem("More", Icons.Default.MoreHoriz, Color(0xFF512DA8), Color.White.copy(alpha = 0.95f))
+            HomeCategoryItem("Favorites", Icons.Default.Favorite, Color(0xFFD32F2F), Color.White.copy(alpha = 0.95f))
         )
     }
 
     Scaffold(
         topBar = {
-            if (activeChatTarget == null && !showProfileScreen && selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
+            if (activeChatTarget == null && !showAboutScreen && selectedBottomNavIndex == 0 && selectedCategory == null && selectedListingDetail == null) {
                 TopAppBar(
                     title = {
                         Box(
@@ -191,38 +187,18 @@ fun HomeScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(Color.White.copy(alpha = 0.2f))
-                                .clickable { showProfileScreen = true }
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .clickable { showAboutScreen = true }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            if (userPhotoUrl != null) {
-                                AsyncImage(
-                                    model = userPhotoUrl,
-                                    contentDescription = "Profile",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .border(1.5.dp, Color.White, CircleShape)
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.3f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = "Profile",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "About Developer",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Profile",
+                                text = "About",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White
@@ -243,16 +219,16 @@ fun HomeScreen(
                     "Home" to Icons.Default.Home,
                     "Add" to Icons.Default.AddBox,
                     "Chats" to Icons.AutoMirrored.Filled.Chat,
-                    "About" to Icons.Default.Info
+                    "Profile" to Icons.Default.Person
                 )
 
                 navItems.forEachIndexed { index, (label, icon) ->
-                    val isSelected = activeChatTarget == null && !showProfileScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
+                    val isSelected = activeChatTarget == null && !showAboutScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
                             activeChatTarget = null
-                            showProfileScreen = false
+                            showAboutScreen = false
                             selectedBottomNavIndex = index
                             selectedCategory = null
                             selectedListingDetail = null
@@ -304,11 +280,8 @@ fun HomeScreen(
                             onBackClick = { activeChatTarget = null }
                         )
                     }
-                    showProfileScreen -> {
-                        ProfileScreen(
-                            viewModel = viewModel,
-                            onSignOut = onSignOut
-                        )
+                    showAboutScreen -> {
+                        AboutCompanyScreen()
                     }
                     selectedListingDetail != null -> {
                         ListingDetailScreen(
@@ -354,7 +327,10 @@ fun HomeScreen(
                         )
                     }
                     selectedBottomNavIndex == 3 -> {
-                        AboutCompanyScreen()
+                        ProfileScreen(
+                            viewModel = viewModel,
+                            onSignOut = onSignOut
+                        )
                     }
                     else -> {
                         Column(
@@ -366,7 +342,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 18.dp)
-                                    .clickable { showProfileScreen = true },
+                                    .clickable { selectedBottomNavIndex = 3 },
                                 shape = RoundedCornerShape(22.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)

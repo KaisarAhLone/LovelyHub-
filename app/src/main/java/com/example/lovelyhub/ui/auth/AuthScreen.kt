@@ -51,7 +51,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
@@ -114,6 +113,7 @@ fun AuthScreen(
 
     var businessName by remember { mutableStateOf("") }
     var businessPhone by remember { mutableStateOf("") }
+    var businessWhatsApp by remember { mutableStateOf("") }
     var businessLocation by remember { mutableStateOf("") }
     var openTime by remember { mutableStateOf("09:00 AM") }
     var closeTime by remember { mutableStateOf("10:00 PM") }
@@ -407,8 +407,21 @@ fun AuthScreen(
                                     OutlinedTextField(
                                         value = businessPhone,
                                         onValueChange = { businessPhone = it },
-                                        label = { Text("Business Phone Number") },
+                                        label = { Text("Business Calling Phone Number") },
                                         leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedTextField(
+                                        value = businessWhatsApp,
+                                        onValueChange = { businessWhatsApp = it },
+                                        label = { Text("WhatsApp Number for Orders (Optional)") },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF2E7D32)) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
@@ -600,6 +613,7 @@ fun AuthScreen(
                                         role = selectedRole.displayName,
                                         businessName = businessName,
                                         businessPhone = businessPhone,
+                                        businessWhatsApp = businessWhatsApp,
                                         businessLocation = businessLocation,
                                         openTime = openTime,
                                         closeTime = closeTime,

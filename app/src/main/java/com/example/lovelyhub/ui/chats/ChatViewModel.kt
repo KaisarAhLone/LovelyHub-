@@ -20,6 +20,9 @@ class ChatViewModel(
     private val _conversations = MutableStateFlow<List<ChatConversation>>(emptyList())
     val conversations: StateFlow<List<ChatConversation>> = _conversations.asStateFlow()
 
+    private val _isLoadingConversations = MutableStateFlow(true)
+    val isLoadingConversations: StateFlow<Boolean> = _isLoadingConversations.asStateFlow()
+
     fun listenToMessages(receiverUid: String) {
         viewModelScope.launch {
             repository.getRealtimeMessages(receiverUid).collect { msgList ->
@@ -30,8 +33,10 @@ class ChatViewModel(
 
     fun listenToConversations() {
         viewModelScope.launch {
+            _isLoadingConversations.value = true
             repository.getRealtimeConversations().collect { convList ->
                 _conversations.value = convList
+                _isLoadingConversations.value = false
             }
         }
     }

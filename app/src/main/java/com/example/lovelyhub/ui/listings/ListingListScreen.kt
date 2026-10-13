@@ -90,102 +90,114 @@ fun ListingListScreen(
 
     var listingToDelete by remember { mutableStateOf<Listing?>(null) }
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFF1DE9B6)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     LaunchedEffect(category) {
         viewModel.fetchListings(category)
     }
 
     Scaffold(
-        containerColor = Color.Transparent
+        containerColor = screenBackground
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = innerPadding.calculateBottomPadding()),
-            color = Color.Transparent
+            color = screenBackground
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(colorfulGradient)
+                    .background(screenBackground)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
+                // Top Header in Brand Purple Gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
+                        .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 2.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = onBackClick,
-                            modifier = Modifier.size(32.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable { onBackClick() },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color.White
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
-                        Text(
-                            text = category,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
-                            color = Color.White
-                        )
+                        Column {
+                            Text(
+                                text = category,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 20.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Verified Campus Listings",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
                     }
+                }
 
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        when (val state = listingState) {
-                            is ListingState.Loading -> {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = Color.White)
-                                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (val state = listingState) {
+                        is ListingState.Loading -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
                             }
-                            is ListingState.Error -> {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(text = state.message, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                }
+                        }
+                        is ListingState.Error -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(text = state.message, color = com.example.lovelyhub.ui.theme.LovelyRedBadge, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
-                            is ListingState.Success -> {
-                                val items = state.items
-                                if (items.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(24.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "No listings in $category yet!",
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.height(14.dp))
-                                            Button(
-                                                onClick = onAddListingClick,
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                                                shape = RoundedCornerShape(12.dp)
-                                            ) {
-                                                Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color(0xFF673AB7))
-                                            }
+                        }
+                        is ListingState.Success -> {
+                            val items = state.items
+                            if (items.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "No listings in $category yet!",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = com.example.lovelyhub.ui.theme.LovelyTextDark
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        Button(
+                                            onClick = onAddListingClick,
+                                            colors = ButtonDefaults.buttonColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary),
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color.White)
                                         }
                                     }
-                                } else {
+                                }
+                            } else {
                                     LazyColumn(
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -222,7 +234,6 @@ fun ListingListScreen(
                 }
             }
         }
-    }
 
     if (listingToDelete != null) {
         AlertDialog(

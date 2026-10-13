@@ -154,14 +154,7 @@ fun ListingDetailScreen(
         }
     }
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFF1DE9B6)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     fun cleanLocationName(rawLocation: String): String {
         if (rawLocation.isBlank()) return "LPU Campus"
@@ -231,36 +224,41 @@ fun ListingDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding()),
-            color = Color.Transparent
+            color = screenBackground
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(colorfulGradient)
+                    .background(screenBackground)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier.size(36.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(com.example.lovelyhub.ui.theme.LovelyPurpleSoft)
+                            .clickable { onBackClick() },
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = com.example.lovelyhub.ui.theme.LovelyPurplePrimary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {

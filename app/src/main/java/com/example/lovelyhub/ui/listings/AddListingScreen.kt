@@ -106,14 +106,7 @@ fun AddListingScreen(
     val role = userProfile?.role ?: "Student"
     val isStudent = role == "Student"
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFFFFB300)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     val defaultCat = when (role) {
         "Restaurant Owner" -> "Restaurants"
@@ -222,19 +215,20 @@ fun AddListingScreen(
                         color = Color.White
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF673AB7))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurpleDark)
             )
         }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
+            color = screenBackground
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(colorfulGradient)
+                    .background(screenBackground)
             ) {
                 Column(
                     modifier = Modifier

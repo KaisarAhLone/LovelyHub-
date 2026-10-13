@@ -8,29 +8,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF9D4EDD),
+    primary = LovelyPurpleLight,
     onPrimary = Color.White,
-    secondary = Color(0xFF7B2CBF),
-    onSecondary = Color.White,
-    background = Color(0xFF121218),
-    onBackground = Color(0xFFE6E1E5),
-    surface = Color(0xFF1E1E28),
-    onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF2D2D3A),
-    onSurfaceVariant = Color(0xFFCAC4D0)
+    secondary = LovelyAmber,
+    onSecondary = LovelyTextDark,
+    background = Color(0xFF0F172A),
+    onBackground = Color(0xFFF8FAFC),
+    surface = Color(0xFF1E293B),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF334155),
+    onSurfaceVariant = Color(0xFFCBD5E1)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF7926E1),
+    primary = LovelyPurplePrimary,
     onPrimary = Color.White,
-    secondary = Color(0xFF511CB2),
-    onSecondary = Color.White,
-    background = Color(0xFFF6F7FB),
-    onBackground = Color(0xFF1C1B1F),
-    surface = Color.White,
-    onSurface = Color(0xFF1C1B1F),
-    surfaceVariant = Color(0xFFF0E5FC),
-    onSurfaceVariant = Color(0xFF49454F)
+    secondary = LovelyAmber,
+    onSecondary = LovelyTextDark,
+    background = LovelyBgLight,
+    onBackground = LovelyTextDark,
+    surface = LovelySurfaceWhite,
+    onSurface = LovelyTextDark,
+    surfaceVariant = LovelyPurpleSoft,
+    onSurfaceVariant = LovelyTextMuted
 )
 
 @Composable

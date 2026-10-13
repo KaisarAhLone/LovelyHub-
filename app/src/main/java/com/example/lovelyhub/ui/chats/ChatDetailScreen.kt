@@ -84,14 +84,7 @@ fun ChatDetailScreen(
     val messages by viewModel.messages.collectAsState()
     var inputText by remember { mutableStateOf("") }
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFF1DE9B6)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     LaunchedEffect(receiverUid) {
         viewModel.listenToMessages(receiverUid)
@@ -148,7 +141,7 @@ fun ChatDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF673AB7))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurpleDark)
             )
         }
     ) { innerPadding ->
@@ -156,12 +149,12 @@ fun ChatDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = Color.Transparent
+            color = screenBackground
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(colorfulGradient)
+                    .background(screenBackground)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(

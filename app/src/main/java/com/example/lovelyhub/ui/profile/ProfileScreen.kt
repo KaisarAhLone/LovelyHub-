@@ -104,14 +104,7 @@ fun ProfileScreen(
     var itemToDelete by remember { mutableStateOf<Listing?>(null) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFFFFB300)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     val editItemImagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -150,18 +143,35 @@ fun ProfileScreen(
         ?: currentUser?.photoUrl?.toString()
 
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = screenBackground
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorfulGradient)
+                .background(screenBackground)
+                .verticalScroll(rememberScrollState())
         ) {
+            // Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                    .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient)
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
+            ) {
+                Text(
+                    text = "My Profile & Listings",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
+            }
+
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
+                    .fillMaxWidth()
+                    .padding(18.dp)
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -422,7 +432,7 @@ fun ProfileScreen(
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.CenterHorizontally)
                     .padding(16.dp)
             )
         }

@@ -127,14 +127,7 @@ fun AuthScreen(
 
     val webClientId = stringResource(R.string.default_web_client_id)
 
-    val colorfulGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF673AB7),
-            Color(0xFF00BCD4),
-            Color(0xFF00E676),
-            Color(0xFFFFB300)
-        )
-    )
+    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     fun showClockPicker(onTimeSelected: (String) -> Unit) {
         val cal = Calendar.getInstance()
@@ -196,7 +189,7 @@ fun AuthScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorfulGradient)
+                .background(screenBackground)
         ) {
             Column(
                 modifier = Modifier
@@ -206,7 +199,9 @@ fun AuthScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(210.dp)
+                        .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
+                        .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -253,7 +248,7 @@ fun AuthScreen(
                         .padding(horizontal = 20.dp)
                         .padding(bottom = 24.dp),
                     shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Column(

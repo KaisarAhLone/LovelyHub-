@@ -154,8 +154,6 @@ fun ListingDetailScreen(
         }
     }
 
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
-
     fun cleanLocationName(rawLocation: String): String {
         if (rawLocation.isBlank()) return "LPU Campus"
         val idx = rawLocation.indexOf("(")
@@ -224,40 +222,35 @@ fun ListingDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding()),
-            color = screenBackground
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(screenBackground)
+                    .background(Color(0xFFF3F4F9))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(com.example.lovelyhub.ui.theme.LovelyPurpleSoft)
-                            .clickable { onBackClick() },
-                        contentAlignment = Alignment.Center
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = com.example.lovelyhub.ui.theme.LovelyPurplePrimary,
-                            modifier = Modifier.size(22.dp)
+                            tint = Color(0xFF1E1E2D)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(22.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
@@ -266,7 +259,7 @@ fun ListingDetailScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(Color(0xFF7B1FA2))
+                                        .background(Color(0xFF3F51B5))
                                         .padding(18.dp)
                                 ) {
                                     Column {
@@ -324,13 +317,13 @@ fun ListingDetailScreen(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .background(Color(0xFFF0E5FC)),
+                                                .background(Color(0xFFE8EAF6)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 imageVector = icon,
                                                 contentDescription = null,
-                                                tint = Color(0xFF673AB7),
+                                                tint = Color(0xFF3F51B5),
                                                 modifier = Modifier.size(64.dp)
                                             )
                                         }
@@ -454,7 +447,7 @@ fun ListingDetailScreen(
                                             .weight(1f)
                                             .height(46.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
                                         contentPadding = PaddingValues(horizontal = 4.dp)
                                     ) {
                                         Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -488,7 +481,7 @@ fun ListingDetailScreen(
                                             .width(46.dp)
                                             .height(46.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF673AB7)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF3F51B5)),
                                         contentPadding = PaddingValues(0.dp)
                                     ) {
                                         Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -509,7 +502,7 @@ fun ListingDetailScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Column(modifier = Modifier.padding(18.dp)) {
@@ -517,7 +510,7 @@ fun ListingDetailScreen(
                                     text = "Job Details & Requirements",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF673AB7)
+                                    color = Color(0xFF3F51B5)
                                 )
 
                                 Spacer(modifier = Modifier.height(10.dp))
@@ -566,7 +559,7 @@ fun ListingDetailScreen(
                                     },
                                     modifier = Modifier.fillMaxWidth().height(48.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
                                 ) {
                                     Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -579,7 +572,7 @@ fun ListingDetailScreen(
                             text = sectionTitle,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = Color(0xFF1E1E2D),
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                         )
 
@@ -589,7 +582,7 @@ fun ListingDetailScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -634,7 +627,7 @@ fun ListingDetailScreen(
                                             .fillMaxWidth()
                                             .padding(vertical = 8.dp),
                                         shape = RoundedCornerShape(18.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                                     ) {
                                         Column(
@@ -679,7 +672,7 @@ fun ListingDetailScreen(
                                                 text = if (isRoomCategory) (if (itemPrice.contains("/")) itemPrice else "$itemPrice / month") else itemPrice,
                                                 fontSize = 17.sp,
                                                 fontWeight = FontWeight.ExtraBold,
-                                                color = Color(0xFF673AB7)
+                                                color = Color(0xFF3F51B5)
                                             )
 
                                             if (isRoomCategory) {
@@ -737,7 +730,7 @@ fun ListingDetailScreen(
                                                         modifier = Modifier
                                                             .weight(1f)
                                                             .height(44.dp),
-                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
                                                         shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -754,7 +747,7 @@ fun ListingDetailScreen(
                                             .fillMaxWidth()
                                             .padding(vertical = 6.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                     ) {
                                         Column(
@@ -802,7 +795,7 @@ fun ListingDetailScreen(
                                                         text = itemPrice,
                                                         fontSize = 16.sp,
                                                         fontWeight = FontWeight.ExtraBold,
-                                                        color = Color(0xFF673AB7)
+                                                        color = Color(0xFF3F51B5)
                                                     )
                                                 }
 
@@ -811,7 +804,7 @@ fun ListingDetailScreen(
                                                         Box(
                                                             modifier = Modifier
                                                                 .clip(RoundedCornerShape(8.dp))
-                                                                .background(Color(0xFF673AB7))
+                                                                .background(Color(0xFF3F51B5))
                                                                 .clickable {
                                                                     cart.add(
                                                                         LocalCartItem(
@@ -931,7 +924,7 @@ fun ListingDetailScreen(
             onDismissRequest = { showCartDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color(0xFF673AB7))
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color(0xFF3F51B5))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Your Cart Summary", fontWeight = FontWeight.Bold)
                 }
@@ -950,7 +943,7 @@ fun ListingDetailScreen(
                                 Text(item.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 Text("${item.quantity} x ${item.priceText}", fontSize = 12.sp, color = Color.Gray)
                             }
-                            Text("₹${(item.priceNum * item.quantity).toInt()}", fontWeight = FontWeight.Bold, color = Color(0xFF673AB7))
+                            Text("₹${(item.priceNum * item.quantity).toInt()}", fontWeight = FontWeight.Bold, color = Color(0xFF3F51B5))
                         }
                     }
 
@@ -984,7 +977,7 @@ fun ListingDetailScreen(
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Grand Total", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E1E2D))
-                        Text("₹${totalCartPrice.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF673AB7))
+                        Text("₹${totalCartPrice.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF3F51B5))
                     }
                 }
             },
@@ -994,7 +987,7 @@ fun ListingDetailScreen(
                         showCartDialog = false
                         showCheckoutDialog = true
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
                 ) {
                     Text("Confirm Order", fontWeight = FontWeight.Bold)
                 }
@@ -1072,11 +1065,11 @@ fun ListingDetailScreen(
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             if (isFetchingGps) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF3F51B5))
                             } else {
-                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF3F51B5), modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Use Current GPS Location", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
+                                Text("Use Current GPS Location", fontSize = 12.sp, color = Color(0xFF3F51B5), fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }

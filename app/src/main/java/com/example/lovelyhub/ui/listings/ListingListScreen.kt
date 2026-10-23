@@ -18,21 +18,45 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.ElectricalServices
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.LocalLaundryService
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PedalBike
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Plumbing
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,9 +65,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -63,15 +90,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.ui.components.ListingImage
+import com.example.lovelyhub.ui.components.MapLocationHelper
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+
+data class ServiceCategoryItem(
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector,
+    val iconTileBg: Color,
+    val iconColor: Color
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,151 +127,678 @@ fun ListingListScreen(
     val scope = rememberCoroutineScope()
 
     var listingToDelete by remember { mutableStateOf<Listing?>(null) }
+    var serviceSearchQuery by remember { mutableStateOf("") }
+    var providerSearchQuery by remember { mutableStateOf("") }
+    var selectedServiceFilter by remember { mutableStateOf<String?>(null) }
 
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
+    var showAddServiceDialog by remember { mutableStateOf(false) }
+    var newServiceName by remember { mutableStateOf("") }
+    var newServiceSubtitle by remember { mutableStateOf("") }
+    var newServicePhone by remember { mutableStateOf("") }
+    var newServiceWhatsApp by remember { mutableStateOf("") }
+    var newServiceLocation by remember { mutableStateOf("") }
+    var isSubmittingService by remember { mutableStateOf(false) }
+
+    val isServicesCategory = category.equals("Services", ignoreCase = true)
+
+    val serviceCategories = remember {
+        listOf(
+            ServiceCategoryItem("Laundry Services", "Washing, ironing & dry cleaning", Icons.Default.LocalLaundryService, Color(0xFFEDE7F6), Color(0xFF7E57C2)),
+            ServiceCategoryItem("Room Cleaning", "Hostel, PG & flat cleaning", Icons.Default.CleaningServices, Color(0xFFE0F2F1), Color(0xFF26A69A)),
+            ServiceCategoryItem("Electrician", "Electrical repairs & installation", Icons.Default.ElectricalServices, Color(0xFFFFF8E1), Color(0xFFFFA726)),
+            ServiceCategoryItem("Plumber", "Pipes, taps & water leakage", Icons.Default.Plumbing, Color(0xFFE3F2FD), Color(0xFF42A5F5)),
+            ServiceCategoryItem("Laptop & Mobile Repair", "Device servicing & repairs", Icons.Default.Computer, Color(0xFFEDE7F6), Color(0xFF5C6BC0)),
+            ServiceCategoryItem("AC & Appliance Repair", "AC, fridge & washing machine", Icons.Default.AcUnit, Color(0xFFE0F7FA), Color(0xFF26C6DA)),
+            ServiceCategoryItem("Salon & Grooming", "Haircut, beard & beauty services", Icons.Default.ContentCut, Color(0xFFFCE4EC), Color(0xFFEC407A)),
+            ServiceCategoryItem("Bike & Cycle Repair", "Puncture & servicing", Icons.Default.PedalBike, Color(0xFFFFF3E0), Color(0xFFFF7043)),
+            ServiceCategoryItem("Home Tuition", "Tutoring & exam preparation", Icons.AutoMirrored.Filled.MenuBook, Color(0xFFE8F5E9), Color(0xFF66BB6A)),
+            ServiceCategoryItem("Shifting & Packing", "Room shifting & luggage transport", Icons.Default.LocalShipping, Color(0xFFFFEBEE), Color(0xFFEF5350)),
+            ServiceCategoryItem("Photography", "Events, portraits & birthdays", Icons.Default.PhotoCamera, Color(0xFFEDE7F6), Color(0xFF7E57C2)),
+            ServiceCategoryItem("Water Can Delivery", "Drinking water for hostels & PGs", Icons.Default.WaterDrop, Color(0xFFE3F2FD), Color(0xFF29B6F6)),
+            ServiceCategoryItem("Local Delivery", "Parcel pickup & drop", Icons.Default.LocalShipping, Color(0xFFE8F5E9), Color(0xFF4CAF50)),
+            ServiceCategoryItem("Car Wash & Repair", "Cleaning & basic servicing", Icons.Default.DirectionsCar, Color(0xFFFFF8E1), Color(0xFFFFB300)),
+            ServiceCategoryItem("Wi-Fi & Internet Setup", "Router setup & connectivity", Icons.Default.Wifi, Color(0xFFEDE7F6), Color(0xFF5C6BC0))
+        )
+    }
+
+    val topHeaderGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF3F51B5),
+            Color(0xFF5C6BC0),
+            Color(0xFFE8EAF6)
+        )
+    )
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1E1E2D),
+        unfocusedTextColor = Color(0xFF1E1E2D),
+        focusedLabelColor = Color(0xFF3F51B5),
+        unfocusedLabelColor = Color(0xFF5C6BC0),
+        focusedPlaceholderColor = Color.Gray,
+        unfocusedPlaceholderColor = Color.Gray,
+        focusedLeadingIconColor = Color(0xFF3F51B5),
+        unfocusedLeadingIconColor = Color(0xFF3F51B5),
+        focusedBorderColor = Color(0xFF3F51B5),
+        unfocusedBorderColor = Color.LightGray,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
 
     LaunchedEffect(category) {
         viewModel.fetchListings(category)
     }
 
+    fun openWhatsApp(targetNum: String, serviceTitle: String) {
+        val cleanNum = targetNum.replace(Regex("[^0-9]"), "")
+        val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
+
+        val msg = "Hello! I found your $serviceTitle on LovelyHub. I would like to inquire about your service."
+        val encodedMsg = Uri.encode(msg)
+
+        val waUri = Uri.parse("https:" + "/" + "/api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
+        val intent = Intent(Intent.ACTION_VIEW, waUri)
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            val fallbackUri = Uri.parse("https:" + "/" + "/wa.me/$fullNum?text=$encodedMsg")
+            val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
+            try { context.startActivity(fallbackIntent) } catch (_: Exception) {}
+        }
+    }
+
     Scaffold(
-        containerColor = screenBackground
+        containerColor = Color.Transparent
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = innerPadding.calculateBottomPadding()),
-            color = screenBackground
+            color = Color.Transparent
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(screenBackground)
+                    .background(Color(0xFFF3F4F9))
             ) {
-                // Top Header in Brand Purple Gradient
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
-                        .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient)
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(topHeaderGradient)
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .clickable { onBackClick() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
                         Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        if (selectedServiceFilter != null) {
+                                            selectedServiceFilter = null
+                                        } else {
+                                            onBackClick()
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = Color.White
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                Text(
+                                    text = if (selectedServiceFilter != null) selectedServiceFilter!! else category,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 18.sp,
+                                    color = Color.White
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
                             Text(
-                                text = category,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Verified Campus Listings",
+                                text = if (selectedServiceFilter != null) "Find service providers near you" else "Find trusted services near your campus",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.padding(start = 38.dp)
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    if (isServicesCategory && selectedServiceFilter == null) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = serviceSearchQuery,
+                                onValueChange = { serviceSearchQuery = it },
+                                placeholder = { Text("Search services...", color = Color.Gray, fontSize = 14.sp) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                                singleLine = true,
+                                shape = RoundedCornerShape(24.dp),
+                                colors = fieldColors,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (val state = listingState) {
-                        is ListingState.Loading -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            val filteredServices = serviceCategories.filter {
+                                serviceSearchQuery.isBlank() || it.title.contains(serviceSearchQuery, ignoreCase = true) || it.subtitle.contains(serviceSearchQuery, ignoreCase = true)
                             }
-                        }
-                        is ListingState.Error -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(text = state.message, color = com.example.lovelyhub.ui.theme.LovelyRedBadge, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        is ListingState.Success -> {
-                            val items = state.items
-                            if (items.isEmpty()) {
-                                Box(
+
+                            filteredServices.forEach { serv ->
+                                Card(
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(24.dp),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .padding(vertical = 5.dp)
+                                        .clickable { selectedServiceFilter = serv.title },
+                                    shape = RoundedCornerShape(18.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = "No listings in $category yet!",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = com.example.lovelyhub.ui.theme.LovelyTextDark
-                                        )
-                                        Spacer(modifier = Modifier.height(14.dp))
-                                        Button(
-                                            onClick = onAddListingClick,
-                                            colors = ButtonDefaults.buttonColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary),
-                                            shape = RoundedCornerShape(14.dp)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color.White)
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(44.dp)
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(serv.iconTileBg),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = serv.icon,
+                                                    contentDescription = serv.title,
+                                                    tint = serv.iconColor,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.width(14.dp))
+
+                                            Column {
+                                                Text(
+                                                    text = serv.title,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color(0xFF1E1E2D)
+                                                )
+
+                                                Spacer(modifier = Modifier.height(2.dp))
+
+                                                Text(
+                                                    text = serv.subtitle,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.Gray
+                                                )
+                                            }
                                         }
+
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                            contentDescription = null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(14.dp)
+                                        )
                                     }
                                 }
-                            } else {
-                                    LazyColumn(
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        items(items) { listing ->
-                                            ListingCardItem(
-                                                listing = listing,
-                                                isOwner = currentUid.isNotBlank() && listing.ownerUid == currentUid,
-                                                onClick = { onListingClick(listing) },
-                                                onCallClick = {
-                                                    if (listing.phone.isNotBlank()) {
-                                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
-                                                        context.startActivity(intent)
-                                                    }
-                                                },
-                                                onFavoriteToggle = {
-                                                    viewModel.toggleFavorite(listing.id, listing.isFavorite, category)
-                                                },
-                                                onDeleteClick = {
-                                                    listingToDelete = listing
+                            }
+                        }
+                    } else if (isServicesCategory && selectedServiceFilter != null) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = providerSearchQuery,
+                                onValueChange = { providerSearchQuery = it },
+                                placeholder = { Text("Search service providers...", color = Color.Gray, fontSize = 14.sp) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                                singleLine = true,
+                                shape = RoundedCornerShape(24.dp),
+                                colors = fieldColors,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    val servObj = serviceCategories.find { it.title.equals(selectedServiceFilter, ignoreCase = true) }
+                                    newServiceName = ""
+                                    newServiceSubtitle = servObj?.subtitle ?: ""
+                                    newServicePhone = ""
+                                    newServiceWhatsApp = ""
+                                    newServiceLocation = "Phagwara, Punjab"
+                                    showAddServiceDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(44.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("+ Add Your ${selectedServiceFilter!!}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            val matchedCategoryObj = serviceCategories.find { it.title.equals(selectedServiceFilter, ignoreCase = true) }
+
+                            when (val state = listingState) {
+                                is ListingState.Loading -> {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator(color = Color(0xFF3F51B5))
+                                    }
+                                }
+                                is ListingState.Error -> {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text(text = state.message, color = Color.DarkGray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                is ListingState.Success -> {
+                                    val providers = state.items.filter {
+                                        (it.title.contains(selectedServiceFilter!!, ignoreCase = true) || it.category.contains(selectedServiceFilter!!, ignoreCase = true) || it.category.contains("Services", ignoreCase = true)) &&
+                                                (providerSearchQuery.isBlank() || it.title.contains(providerSearchQuery, ignoreCase = true) || it.location.contains(providerSearchQuery, ignoreCase = true))
+                                    }
+
+                                    if (providers.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize().padding(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "No providers listed for ${selectedServiceFilter!!} yet!",
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Button(
+                                                    onClick = {
+                                                        showAddServiceDialog = true
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text("Be First to Add Your Service", fontWeight = FontWeight.Bold, color = Color.White)
                                                 }
-                                            )
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(bottom = 16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                                        ) {
+                                            items(providers) { provider ->
+                                                Card(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable { onListingClick(provider) },
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(16.dp)
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(56.dp)
+                                                                    .clip(RoundedCornerShape(16.dp))
+                                                                    .background(matchedCategoryObj?.iconTileBg ?: Color(0xFFEDE7F6)),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = matchedCategoryObj?.icon ?: Icons.Default.Build,
+                                                                    contentDescription = null,
+                                                                    tint = matchedCategoryObj?.iconColor ?: Color(0xFF3F51B5),
+                                                                    modifier = Modifier.size(28.dp)
+                                                                )
+                                                            }
+
+                                                            Spacer(modifier = Modifier.width(14.dp))
+
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = provider.title,
+                                                                    fontSize = 17.sp,
+                                                                    fontWeight = FontWeight.ExtraBold,
+                                                                    color = Color(0xFF1E1E2D)
+                                                                )
+
+                                                                Spacer(modifier = Modifier.height(2.dp))
+
+                                                                Text(
+                                                                    text = if (provider.price.isNotBlank() && !provider.price.startsWith("₹")) provider.price else selectedServiceFilter!!,
+                                                                    fontSize = 13.sp,
+                                                                    fontWeight = FontWeight.SemiBold,
+                                                                    color = Color.Gray
+                                                                )
+
+                                                                Spacer(modifier = Modifier.height(2.dp))
+
+                                                                Text(
+                                                                    text = provider.location.ifBlank { "Phagwara, Punjab" },
+                                                                    fontSize = 12.sp,
+                                                                    color = Color.DarkGray
+                                                                )
+                                                            }
+                                                        }
+
+                                                        Spacer(modifier = Modifier.height(14.dp))
+                                                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.15f))
+                                                        Spacer(modifier = Modifier.height(14.dp))
+
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Button(
+                                                                onClick = {
+                                                                    if (provider.phone.isNotBlank()) {
+                                                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${provider.phone}"))
+                                                                        try { context.startActivity(intent) } catch (_: Exception) {}
+                                                                    }
+                                                                },
+                                                                modifier = Modifier
+                                                                    .weight(1f)
+                                                                    .height(42.dp),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEDE7F6), contentColor = Color(0xFF5C6BC0)),
+                                                                contentPadding = PaddingValues(0.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                            }
+
+                                                            Button(
+                                                                onClick = {
+                                                                    val num = provider.whatsApp.ifBlank { provider.phone }
+                                                                    if (num.isNotBlank()) {
+                                                                        openWhatsApp(num, selectedServiceFilter!!)
+                                                                    }
+                                                                },
+                                                                modifier = Modifier
+                                                                    .weight(1.1f)
+                                                                    .height(42.dp),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8F5E9), contentColor = Color(0xFF2E7D32)),
+                                                                contentPadding = PaddingValues(0.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("WhatsApp", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                            }
+
+                                                            Button(
+                                                                onClick = {
+                                                                    MapLocationHelper.openMapDirections(context, provider.location)
+                                                                },
+                                                                modifier = Modifier
+                                                                    .weight(1.1f)
+                                                                    .height(42.dp),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE3F2FD), contentColor = Color(0xFF1976D2)),
+                                                                contentPadding = PaddingValues(0.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("Location", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            when (val state = listingState) {
+                                is ListingState.Loading -> {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator(color = Color(0xFF3F51B5))
+                                    }
+                                }
+                                is ListingState.Error -> {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text(text = state.message, color = Color.DarkGray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                is ListingState.Success -> {
+                                    val items = state.items
+                                    if (items.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "No listings in $category yet!",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(14.dp))
+                                                Button(
+                                                    onClick = onAddListingClick,
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color.White)
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            items(items) { listing ->
+                                                ListingCardItem(
+                                                    listing = listing,
+                                                    isOwner = currentUid.isNotBlank() && listing.ownerUid == currentUid,
+                                                    onClick = { onListingClick(listing) },
+                                                    onCallClick = {
+                                                        if (listing.phone.isNotBlank()) {
+                                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                            context.startActivity(intent)
+                                                        }
+                                                    },
+                                                    onFavoriteToggle = {
+                                                        viewModel.toggleFavorite(listing.id, listing.isFavorite, category)
+                                                    },
+                                                    onDeleteClick = {
+                                                        listingToDelete = listing
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
 
-                        SnackbarHost(
-                            hostState = snackbarHostState,
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                        )
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (showAddServiceDialog && selectedServiceFilter != null) {
+        AlertDialog(
+            onDismissRequest = { if (!isSubmittingService) showAddServiceDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3F51B5))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add ${selectedServiceFilter!!}", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    OutlinedTextField(
+                        value = newServiceName,
+                        onValueChange = { newServiceName = it },
+                        label = { Text("Service / Business Name", fontWeight = FontWeight.Bold) },
+                        placeholder = { Text("e.g. Quick Wash Laundry") },
+                        leadingIcon = { Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = newServiceSubtitle,
+                        onValueChange = { newServiceSubtitle = it },
+                        label = { Text("Specialization / Subtitle", fontWeight = FontWeight.Bold) },
+                        placeholder = { Text("e.g. Laundry & Ironing") },
+                        leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = newServicePhone,
+                        onValueChange = { newServicePhone = it },
+                        label = { Text("Call Phone Number", fontWeight = FontWeight.Bold) },
+                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = newServiceWhatsApp,
+                        onValueChange = { newServiceWhatsApp = it },
+                        label = { Text("WhatsApp Number", fontWeight = FontWeight.Bold) },
+                        leadingIcon = { Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color(0xFF2E7D32)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = newServiceLocation,
+                        onValueChange = { newServiceLocation = it },
+                        label = { Text("Location / Address", fontWeight = FontWeight.Bold) },
+                        placeholder = { Text("e.g. Phagwara, Punjab") },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newServiceName.isBlank() || newServicePhone.isBlank()) {
+                            scope.launch { snackbarHostState.showSnackbar("Please enter Service Name & Phone Number") }
+                            return@Button
+                        }
+
+                        isSubmittingService = true
+                        val newServiceListing = Listing(
+                            category = selectedServiceFilter!!,
+                            title = newServiceName.trim(),
+                            price = if (newServiceSubtitle.isNotBlank()) newServiceSubtitle.trim() else selectedServiceFilter!!,
+                            phone = newServicePhone.trim(),
+                            whatsApp = if (newServiceWhatsApp.isNotBlank()) newServiceWhatsApp.trim() else newServicePhone.trim(),
+                            location = if (newServiceLocation.isNotBlank()) newServiceLocation.trim() else "Phagwara, Punjab"
+                        )
+
+                        viewModel.postListing(context, newServiceListing, null) { error ->
+                            isSubmittingService = false
+                            if (error == null) {
+                                showAddServiceDialog = false
+                                newServiceName = ""
+                                newServiceSubtitle = ""
+                                newServicePhone = ""
+                                newServiceWhatsApp = ""
+                                newServiceLocation = ""
+                                viewModel.fetchListings("Services")
+                                scope.launch { snackbarHostState.showSnackbar("Service added successfully!") }
+                            } else {
+                                scope.launch { snackbarHostState.showSnackbar(error) }
+                            }
+                        }
+                    },
+                    enabled = !isSubmittingService,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
+                ) {
+                    if (isSubmittingService) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                    } else {
+                        Text("Add Service Now", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showAddServiceDialog = false },
+                    enabled = !isSubmittingService
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     if (listingToDelete != null) {
         AlertDialog(
@@ -277,7 +842,7 @@ fun ListingCardItem(
     val isOpen = listing.status.equals("Open", ignoreCase = true)
     val isRoomOrRental = listing.category.equals("Rooms", ignoreCase = true) || listing.category.equals("Rentals", ignoreCase = true)
     val isJob = listing.category.equals("Jobs", ignoreCase = true)
-    val cardBg = if (isOpen) Color.White.copy(alpha = 0.95f) else Color(0xFFEEEEEE).copy(alpha = 0.95f)
+    val cardBg = if (isOpen) Color.White else Color(0xFFEEEEEE)
 
     fun cleanLocationName(rawLocation: String): String {
         if (rawLocation.isBlank()) return "LPU Campus"
@@ -310,7 +875,7 @@ fun ListingCardItem(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF7B1FA2))
+                        .background(Color(0xFF3F51B5))
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Row(
@@ -373,7 +938,7 @@ fun ListingCardItem(
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
-                                tint = Color(0xFF673AB7),
+                                tint = Color(0xFF3F51B5),
                                 modifier = Modifier.size(52.dp)
                             )
                         }
@@ -511,7 +1076,7 @@ fun ListingCardItem(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF673AB7))
+                                .background(Color(0xFF3F51B5))
                                 .clickable { onCallClick() },
                             contentAlignment = Alignment.Center
                         ) {

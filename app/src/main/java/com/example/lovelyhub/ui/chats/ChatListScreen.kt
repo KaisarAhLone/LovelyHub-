@@ -56,7 +56,13 @@ fun ChatListScreen(
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.isLoadingConversations.collectAsState()
 
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
+    val topHeaderGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF3F51B5),
+            Color(0xFF5C6BC0),
+            Color(0xFFE8EAF6)
+        )
+    )
 
     LaunchedEffect(Unit) {
         viewModel.listenToConversations()
@@ -64,65 +70,59 @@ fun ChatListScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = screenBackground
+        color = Color.Transparent
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(screenBackground)
+                .background(Color(0xFFF3F4F9))
         ) {
-            // Top Purple Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
-                    .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient)
-                    .padding(horizontal = 18.dp, vertical = 16.dp)
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(topHeaderGradient)
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
                     Text(
-                        text = "Messages & Chats",
-                        fontSize = 22.sp,
+                        text = "MY CHATS & MESSAGES",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
-                    Text(
-                        text = "Chat with verified sellers and roommates",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF3F51B5))
+                        }
                     }
-                }
-                conversations.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No messages yet!\nClick Message on any Restaurant or Listing to start chatting.",
-                            textAlign = TextAlign.Center,
-                            color = com.example.lovelyhub.ui.theme.LovelyTextMuted,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                    conversations.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No messages yet!\nClick Message on any Restaurant or Listing to start chatting.",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.DarkGray,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(24.dp)
+                            )
+                        }
                     }
-                }
-                else -> {
+                    else -> {
                         LazyColumn(
-                            contentPadding = PaddingValues(bottom = 16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(conversations) { conv ->
@@ -135,9 +135,8 @@ fun ChatListScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 14.dp)
                                         .clickable { onConversationClick(conv) },
-                                    shape = RoundedCornerShape(20.dp),
+                                    shape = RoundedCornerShape(18.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                                 ) {
@@ -155,20 +154,20 @@ fun ChatListScreen(
                                                 modifier = Modifier
                                                     .size(52.dp)
                                                     .clip(CircleShape)
-                                                    .border(2.dp, com.example.lovelyhub.ui.theme.LovelyPurplePrimary, CircleShape)
+                                                    .border(2.dp, Color(0xFF3F51B5), CircleShape)
                                             )
                                         } else {
                                             Box(
                                                 modifier = Modifier
                                                     .size(52.dp)
                                                     .clip(CircleShape)
-                                                    .background(com.example.lovelyhub.ui.theme.LovelyPurpleSoft),
+                                                    .background(Color(0xFF3F51B5).copy(alpha = 0.15f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Person,
                                                     contentDescription = null,
-                                                    tint = Color(0xFF673AB7),
+                                                    tint = Color(0xFF3F51B5),
                                                     modifier = Modifier.size(28.dp)
                                                 )
                                             }
@@ -239,3 +238,4 @@ fun ChatListScreen(
             }
         }
     }
+}

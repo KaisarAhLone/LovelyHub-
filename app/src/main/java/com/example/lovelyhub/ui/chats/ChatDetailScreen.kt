@@ -84,8 +84,6 @@ fun ChatDetailScreen(
     val messages by viewModel.messages.collectAsState()
     var inputText by remember { mutableStateOf("") }
 
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
-
     LaunchedEffect(receiverUid) {
         viewModel.listenToMessages(receiverUid)
     }
@@ -141,7 +139,7 @@ fun ChatDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurpleDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3F51B5))
             )
         }
     ) { innerPadding ->
@@ -149,12 +147,12 @@ fun ChatDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = screenBackground
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(screenBackground)
+                    .background(Color(0xFFF3F4F9))
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
@@ -192,7 +190,7 @@ fun ChatDetailScreen(
                                                     bottomEnd = if (isMe) 2.dp else 16.dp
                                                 )
                                             )
-                                            .background(if (isMe) Color(0xFF673AB7) else Color.White.copy(alpha = 0.95f))
+                                            .background(if (isMe) Color(0xFF3F51B5) else Color.White)
                                             .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
                                         Column {
@@ -237,7 +235,7 @@ fun ChatDetailScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
                                 focusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFF673AB7),
+                                focusedBorderColor = Color(0xFF3F51B5),
                                 unfocusedBorderColor = Color.Transparent
                             )
                         )
@@ -308,7 +306,7 @@ fun OrderCardBubble(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.98f)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -340,7 +338,7 @@ fun OrderCardBubble(
                 text = "Ordered Items:",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF673AB7)
+                color = Color(0xFF3F51B5)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -378,13 +376,13 @@ fun OrderCardBubble(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFFF0E5FC)),
+                                .background(Color(0xFFE8EAF6)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Restaurant,
                                 contentDescription = null,
-                                tint = Color(0xFF673AB7),
+                                tint = Color(0xFF3F51B5),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -428,7 +426,7 @@ fun OrderCardBubble(
                     .background(Color(0xFFF6F7FB))
                     .padding(10.dp)
             ) {
-                Text("Customer & Delivery Info:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF673AB7))
+                Text("Customer & Delivery Info:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF3F51B5))
                 Spacer(modifier = Modifier.height(2.dp))
                 if (nameLine.isNotBlank()) Text("👤 Name: $nameLine", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E1E2D))
                 if (phoneLine.isNotBlank()) Text("📞 Phone: $phoneLine", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E1E2D))
@@ -467,7 +465,7 @@ fun OrderCardBubble(
                             .weight(1f)
                             .height(40.dp),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
                     ) {
                         Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Description
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Title
@@ -59,6 +61,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -104,9 +107,6 @@ fun AddListingScreen(
 
     val userProfile by authViewModel.currentUserProfile.collectAsState()
     val role = userProfile?.role ?: "Student"
-    val isStudent = role == "Student"
-
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
 
     val defaultCat = when (role) {
         "Restaurant Owner" -> "Restaurants"
@@ -135,11 +135,13 @@ fun AddListingScreen(
             selectedCategory.equals("Rooms", ignoreCase = true) -> "Rooms"
             selectedCategory.equals("Rentals", ignoreCase = true) -> "Rentals"
             selectedCategory.equals("Jobs", ignoreCase = true) -> "Jobs"
+            selectedCategory.equals("Services", ignoreCase = true) -> "Services"
             else -> "Standard"
         }
     }
 
     var itemName by remember { mutableStateOf("") }
+    var subtitle by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var mileage by remember { mutableStateOf("") }
     var roomType by remember { mutableStateOf("Single Room") }
@@ -157,6 +159,7 @@ fun AddListingScreen(
     var extraNotes by remember { mutableStateOf("") }
 
     var phone by remember(userProfile) { mutableStateOf(userProfile?.businessPhone ?: "") }
+    var whatsAppNum by remember(userProfile) { mutableStateOf(userProfile?.businessWhatsApp.takeIf { !it.isNullOrBlank() } ?: userProfile?.businessPhone ?: "") }
     var location by remember(userProfile) { mutableStateOf(userProfile?.businessLocation ?: "") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var itemImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -165,6 +168,21 @@ fun AddListingScreen(
 
     val roomTypeOptions = listOf("Single Room", "Double Sharing", "Triple Sharing", "1BHK Flat")
     val jobTypeOptions = listOf("Part-time", "Full-time", "Internship", "Freelance / On-Demand")
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1E1E2D),
+        unfocusedTextColor = Color(0xFF1E1E2D),
+        focusedLabelColor = Color(0xFF3F51B5),
+        unfocusedLabelColor = Color(0xFF5C6BC0),
+        focusedPlaceholderColor = Color.Gray,
+        unfocusedPlaceholderColor = Color.Gray,
+        focusedLeadingIconColor = Color(0xFF3F51B5),
+        unfocusedLeadingIconColor = Color(0xFF3F51B5),
+        focusedBorderColor = Color(0xFF3F51B5),
+        unfocusedBorderColor = Color.LightGray,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -208,6 +226,7 @@ fun AddListingScreen(
                             "Rooms" -> "ADD ROOM TO PG"
                             "Rentals" -> "ADD VEHICLE TO RENTAL"
                             "Jobs" -> "POST CAMPUS JOB"
+                            "Services" -> "ADD YOUR SERVICE PROVIDER"
                             else -> "ADD NEW LISTING"
                         },
                         fontWeight = FontWeight.ExtraBold,
@@ -215,20 +234,19 @@ fun AddListingScreen(
                         color = Color.White
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurpleDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3F51B5))
             )
         }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            color = screenBackground
+                .padding(innerPadding)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(screenBackground)
+                    .background(Color(0xFFF3F4F9))
             ) {
                 Column(
                     modifier = Modifier
@@ -239,7 +257,7 @@ fun AddListingScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                     ) {
                         Column(
@@ -260,11 +278,12 @@ fun AddListingScreen(
                                     value = selectedCategory,
                                     onValueChange = {},
                                     readOnly = true,
-                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    colors = fieldColors,
+                                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                     trailingIcon = {
                                         if (categories.size > 1) {
                                             IconButton(onClick = { isCategoryDropdownExpanded = true }) {
-                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
+                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF3F51B5))
                                             }
                                         }
                                     },
@@ -294,60 +313,14 @@ fun AddListingScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             when (categoryType) {
-                                "Jobs" -> {
+                                "Services" -> {
                                     OutlinedTextField(
                                         value = itemName,
                                         onValueChange = { itemName = it },
-                                        label = { Text("Job Title / Designation (e.g. Cafe Barista)") },
-                                        leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        label = { Text("Service / Business Name (e.g. Quick Wash Laundry)") },
+                                        leadingIcon = { Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                         singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(14.dp))
-
-                                    Box(modifier = Modifier.fillMaxWidth()) {
-                                        OutlinedTextField(
-                                            value = jobType,
-                                            onValueChange = {},
-                                            readOnly = true,
-                                            label = { Text("Job Type") },
-                                            leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF673AB7)) },
-                                            trailingIcon = {
-                                                IconButton(onClick = { isJobTypeDropdownExpanded = true }) {
-                                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
-                                                }
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-
-                                        DropdownMenu(
-                                            expanded = isJobTypeDropdownExpanded,
-                                            onDismissRequest = { isJobTypeDropdownExpanded = false },
-                                            modifier = Modifier.fillMaxWidth(0.85f)
-                                        ) {
-                                            jobTypeOptions.forEach { opt ->
-                                                DropdownMenuItem(
-                                                    text = { Text(opt, fontWeight = FontWeight.Medium) },
-                                                    onClick = {
-                                                        jobType = opt
-                                                        isJobTypeDropdownExpanded = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(14.dp))
-
-                                    OutlinedTextField(
-                                        value = price,
-                                        onValueChange = { price = it },
-                                        label = { Text("Salary / Pay Rate (e.g. ₹12,000 / month)") },
-                                        leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF673AB7)) },
-                                        singleLine = true,
+                                        colors = fieldColors,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -355,11 +328,12 @@ fun AddListingScreen(
                                     Spacer(modifier = Modifier.height(14.dp))
 
                                     OutlinedTextField(
-                                        value = workHours,
-                                        onValueChange = { workHours = it },
-                                        label = { Text("Work Hours / Timings (e.g. 4 PM - 9 PM)") },
-                                        leadingIcon = { Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        value = subtitle,
+                                        onValueChange = { subtitle = it },
+                                        label = { Text("Service Subtitle / Specialization (e.g. Laundry & Ironing)") },
+                                        leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                         singleLine = true,
+                                        colors = fieldColors,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -367,10 +341,27 @@ fun AddListingScreen(
                                     Spacer(modifier = Modifier.height(14.dp))
 
                                     OutlinedTextField(
-                                        value = jobDesc,
-                                        onValueChange = { jobDesc = it },
-                                        label = { Text("Job Description / Requirements") },
-                                        leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        value = phone,
+                                        onValueChange = { phone = it },
+                                        label = { Text("Calling Phone Number") },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        colors = fieldColors,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    OutlinedTextField(
+                                        value = whatsAppNum,
+                                        onValueChange = { whatsAppNum = it },
+                                        label = { Text("WhatsApp Number") },
+                                        leadingIcon = { Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color(0xFF2E7D32)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        colors = fieldColors,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -381,9 +372,10 @@ fun AddListingScreen(
                                         OutlinedTextField(
                                             value = location,
                                             onValueChange = { location = it },
-                                            label = { Text("Job Location (e.g. Law Gate, LPU)") },
-                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                            label = { Text("Service Location / Campus Area (e.g. Phagwara, Punjab)") },
+                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                             singleLine = true,
+                                            colors = fieldColors,
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(12.dp)
                                         )
@@ -417,11 +409,150 @@ fun AddListingScreen(
                                                 shape = RoundedCornerShape(10.dp)
                                             ) {
                                                 if (isFetchingLocation) {
-                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF3F51B5))
                                                 } else {
-                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF3F51B5), modifier = Modifier.size(16.dp))
                                                     Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
+                                                    Text("Current GPS", fontSize = 12.sp, color = Color(0xFF3F51B5), fontWeight = FontWeight.SemiBold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                "Jobs" -> {
+                                    OutlinedTextField(
+                                        value = itemName,
+                                        onValueChange = { itemName = it },
+                                        label = { Text("Job Title / Designation (e.g. Cafe Barista)") },
+                                        leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                        singleLine = true,
+                                        colors = fieldColors,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        OutlinedTextField(
+                                            value = jobType,
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text("Job Type") },
+                                            leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                            trailingIcon = {
+                                                IconButton(onClick = { isJobTypeDropdownExpanded = true }) {
+                                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF3F51B5))
+                                                }
+                                            },
+                                            colors = fieldColors,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+
+                                        DropdownMenu(
+                                            expanded = isJobTypeDropdownExpanded,
+                                            onDismissRequest = { isJobTypeDropdownExpanded = false },
+                                            modifier = Modifier.fillMaxWidth(0.85f)
+                                        ) {
+                                            jobTypeOptions.forEach { opt ->
+                                                DropdownMenuItem(
+                                                    text = { Text(opt, fontWeight = FontWeight.Medium) },
+                                                    onClick = {
+                                                        jobType = opt
+                                                        isJobTypeDropdownExpanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    OutlinedTextField(
+                                        value = price,
+                                        onValueChange = { price = it },
+                                        label = { Text("Salary / Pay Rate (e.g. ₹12,000 / month)") },
+                                        leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                        singleLine = true,
+                                        colors = fieldColors,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    OutlinedTextField(
+                                        value = workHours,
+                                        onValueChange = { workHours = it },
+                                        label = { Text("Work Hours / Timings (e.g. 4 PM - 9 PM)") },
+                                        leadingIcon = { Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                        singleLine = true,
+                                        colors = fieldColors,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    OutlinedTextField(
+                                        value = jobDesc,
+                                        onValueChange = { jobDesc = it },
+                                        label = { Text("Job Description / Requirements") },
+                                        leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                        colors = fieldColors,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        OutlinedTextField(
+                                            value = location,
+                                            onValueChange = { location = it },
+                                            label = { Text("Job Location (e.g. Law Gate, LPU)") },
+                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                                            singleLine = true,
+                                            colors = fieldColors,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = { MapLocationHelper.openMapPicker(context, location) },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    locationPermissionLauncher.launch(
+                                                        arrayOf(
+                                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                                        )
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                if (isFetchingLocation) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF3F51B5))
+                                                } else {
+                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF3F51B5), modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Current GPS", fontSize = 12.sp, color = Color(0xFF3F51B5), fontWeight = FontWeight.SemiBold)
                                                 }
                                             }
                                         }
@@ -433,9 +564,10 @@ fun AddListingScreen(
                                         value = phone,
                                         onValueChange = { phone = it },
                                         label = { Text("Contact Phone Number") },
-                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                                         singleLine = true,
+                                        colors = fieldColors,
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -460,7 +592,7 @@ fun AddListingScreen(
                                                 .fillMaxWidth()
                                                 .height(160.dp)
                                                 .clip(RoundedCornerShape(14.dp))
-                                                .background(Color(0xFFF0E5FC))
+                                                .background(Color(0xFFE8EAF6))
                                                 .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                                                 .clickable { multipleImagePickerLauncher.launch("image/*") },
                                             contentAlignment = Alignment.Center
@@ -486,7 +618,7 @@ fun AddListingScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.CameraAlt,
                                                         contentDescription = null,
-                                                        tint = Color(0xFF673AB7),
+                                                        tint = Color(0xFF3F51B5),
                                                         modifier = Modifier.size(42.dp)
                                                     )
                                                     Spacer(modifier = Modifier.height(6.dp))
@@ -494,7 +626,7 @@ fun AddListingScreen(
                                                         text = if (categoryType == "Rooms") "Upload Room Photos (Up to 5)" else "Upload Vehicle Photos (Up to 5)",
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF673AB7)
+                                                        color = Color(0xFF3F51B5)
                                                     )
                                                 }
                                             }
@@ -505,7 +637,7 @@ fun AddListingScreen(
                                                 .fillMaxWidth()
                                                 .height(160.dp)
                                                 .clip(RoundedCornerShape(14.dp))
-                                                .background(Color(0xFFF0E5FC))
+                                                .background(Color(0xFFE8EAF6))
                                                 .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                                                 .clickable { singleImagePickerLauncher.launch("image/*") },
                                             contentAlignment = Alignment.Center
@@ -522,7 +654,7 @@ fun AddListingScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.CameraAlt,
                                                         contentDescription = null,
-                                                        tint = Color(0xFF673AB7),
+                                                        tint = Color(0xFF3F51B5),
                                                         modifier = Modifier.size(42.dp)
                                                     )
                                                     Spacer(modifier = Modifier.height(6.dp))
@@ -530,7 +662,7 @@ fun AddListingScreen(
                                                         text = if (categoryType == "Food") "Upload Dish Photo" else "Upload Photo",
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF673AB7)
+                                                        color = Color(0xFF3F51B5)
                                                     )
                                                 }
                                             }
@@ -547,12 +679,13 @@ fun AddListingScreen(
                                                     onValueChange = {},
                                                     readOnly = true,
                                                     label = { Text("Room Type") },
-                                                    leadingIcon = { Icon(Icons.Default.HomeWork, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                    leadingIcon = { Icon(Icons.Default.HomeWork, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                     trailingIcon = {
                                                         IconButton(onClick = { isRoomTypeDropdownExpanded = true }) {
-                                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
+                                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF3F51B5))
                                                         }
                                                     },
+                                                    colors = fieldColors,
                                                     modifier = Modifier.fillMaxWidth(),
                                                     shape = RoundedCornerShape(12.dp)
                                                 )
@@ -580,9 +713,10 @@ fun AddListingScreen(
                                                 value = price,
                                                 onValueChange = { price = it },
                                                 label = { Text("Rent Price (e.g. ₹5000/month)") },
-                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -602,7 +736,7 @@ fun AddListingScreen(
                                                 Checkbox(
                                                     checked = hasWifi,
                                                     onCheckedChange = { hasWifi = it },
-                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
+                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF3F51B5))
                                                 )
                                                 Text("Wifi Available", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                             }
@@ -611,7 +745,7 @@ fun AddListingScreen(
                                                 Checkbox(
                                                     checked = hasBathroom,
                                                     onCheckedChange = { hasBathroom = it },
-                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
+                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF3F51B5))
                                                 )
                                                 Text("Attached Bathroom", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                             }
@@ -620,7 +754,7 @@ fun AddListingScreen(
                                                 Checkbox(
                                                     checked = hasWater,
                                                     onCheckedChange = { hasWater = it },
-                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
+                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF3F51B5))
                                                 )
                                                 Text("24x7 Water", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                             }
@@ -629,7 +763,7 @@ fun AddListingScreen(
                                                 Checkbox(
                                                     checked = hasFurnished,
                                                     onCheckedChange = { hasFurnished = it },
-                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
+                                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF3F51B5))
                                                 )
                                                 Text("Fully Furnished", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                             }
@@ -641,6 +775,7 @@ fun AddListingScreen(
                                                 onValueChange = { extraNotes = it },
                                                 label = { Text("Extra Facilities (e.g. AC, Balcony, Geyser)") },
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -650,8 +785,9 @@ fun AddListingScreen(
                                                 value = itemName,
                                                 onValueChange = { itemName = it },
                                                 label = { Text("Vehicle Name (e.g. Royal Enfield Bullet 350)") },
-                                                leadingIcon = { Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -662,9 +798,10 @@ fun AddListingScreen(
                                                 value = price,
                                                 onValueChange = { price = it },
                                                 label = { Text("Rental Price (e.g. ₹500/day or ₹60/hour)") },
-                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -675,8 +812,9 @@ fun AddListingScreen(
                                                 value = mileage,
                                                 onValueChange = { mileage = it },
                                                 label = { Text("Mileage / Features (e.g. 45 km/l, Petrol)") },
-                                                leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -686,8 +824,9 @@ fun AddListingScreen(
                                                 value = itemName,
                                                 onValueChange = { itemName = it },
                                                 label = { Text("Item Name") },
-                                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -698,9 +837,10 @@ fun AddListingScreen(
                                                 value = price,
                                                 onValueChange = { price = it },
                                                 label = { Text("Price") },
-                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                leadingIcon = { Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = if (categoryType == "Food") ImeAction.Done else ImeAction.Next),
                                                 singleLine = true,
+                                                colors = fieldColors,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -713,8 +853,9 @@ fun AddListingScreen(
                                                         value = location,
                                                         onValueChange = { location = it },
                                                         label = { Text("Location") },
-                                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                         singleLine = true,
+                                                        colors = fieldColors,
                                                         modifier = Modifier.fillMaxWidth(),
                                                         shape = RoundedCornerShape(12.dp)
                                                     )
@@ -748,11 +889,11 @@ fun AddListingScreen(
                                                             shape = RoundedCornerShape(10.dp)
                                                         ) {
                                                             if (isFetchingLocation) {
-                                                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
+                                                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF3F51B5))
                                                             } else {
-                                                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
+                                                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF3F51B5), modifier = Modifier.size(16.dp))
                                                                 Spacer(modifier = Modifier.width(4.dp))
-                                                                Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
+                                                                Text("Current GPS", fontSize = 12.sp, color = Color(0xFF3F51B5), fontWeight = FontWeight.SemiBold)
                                                             }
                                                         }
                                                     }
@@ -764,9 +905,10 @@ fun AddListingScreen(
                                                     value = phone,
                                                     onValueChange = { phone = it },
                                                     label = { Text("Phone Number") },
-                                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF3F51B5)) },
                                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                                                     singleLine = true,
+                                                    colors = fieldColors,
                                                     modifier = Modifier.fillMaxWidth(),
                                                     shape = RoundedCornerShape(12.dp)
                                                 )
@@ -784,19 +926,21 @@ fun AddListingScreen(
                                         "Rooms" -> roomType
                                         "Rentals" -> if (mileage.isNotBlank()) "$itemName ($mileage)" else itemName
                                         "Jobs" -> "$itemName ($jobType)"
+                                        "Services" -> itemName
                                         else -> itemName
                                     }
 
-                                    if (finalItemTitle.isBlank() || price.isBlank()) {
-                                        scope.launch { snackbarHostState.showSnackbar("Please enter required details and price/salary") }
+                                    if (finalItemTitle.isBlank()) {
+                                        scope.launch { snackbarHostState.showSnackbar("Please enter Service / Business Name") }
                                         return@Button
                                     }
 
                                     isLoading = true
                                     val postedCat = selectedCategory
 
-                                    val finalPhone = if (categoryType != "Standard" && categoryType != "Jobs") (userProfile?.businessPhone ?: "") else phone
-                                    val finalLocation = if (categoryType != "Standard" && categoryType != "Jobs") (userProfile?.businessLocation ?: "") else location
+                                    val finalPhone = if (categoryType == "Services") phone else (if (categoryType != "Standard" && categoryType != "Jobs") (userProfile?.businessPhone ?: "") else phone)
+                                    val finalLocation = if (categoryType == "Services") location else (if (categoryType != "Standard" && categoryType != "Jobs") (userProfile?.businessLocation ?: "") else location)
+                                    val finalPrice = if (categoryType == "Services") (if (subtitle.isNotBlank()) subtitle else "On Demand Service") else price
 
                                     scope.launch {
                                         val encodedImagesList = mutableListOf<String>()
@@ -825,7 +969,7 @@ fun AddListingScreen(
                                         val finalFacilitiesString = selectedFacs.joinToString(",")
 
                                         val finalFormattedItem = when (categoryType) {
-                                            "Rooms" -> if (finalFacilitiesString.isNotBlank()) "$finalItemTitle - $price|$finalCombinedImages|$finalFacilitiesString" else ""
+                                            "Rooms" -> if (finalFacilitiesString.isNotBlank()) "$finalItemTitle - $finalPrice|$finalCombinedImages|$finalFacilitiesString" else ""
                                             "Jobs" -> "$jobDesc|$workHours"
                                             else -> ""
                                         }
@@ -833,8 +977,9 @@ fun AddListingScreen(
                                         val newListing = Listing(
                                             category = postedCat,
                                             title = finalItemTitle,
-                                            price = price,
+                                            price = finalPrice,
                                             phone = finalPhone,
+                                            whatsApp = if (categoryType == "Services") whatsAppNum else "",
                                             location = finalLocation,
                                             imageUrl = finalCombinedImages,
                                             menuItems = if (finalFormattedItem.isNotBlank()) listOf(finalFormattedItem) else emptyList()
@@ -844,12 +989,13 @@ fun AddListingScreen(
                                             isLoading = false
                                             if (error == null) {
                                                 itemName = ""
+                                                subtitle = ""
                                                 price = ""
                                                 mileage = ""
                                                 jobDesc = ""
                                                 imageUri = null
                                                 itemImageUris = emptyList()
-                                                scope.launch { snackbarHostState.showSnackbar("Added successfully!") }
+                                                scope.launch { snackbarHostState.showSnackbar("Service added successfully!") }
                                                 onSuccess(postedCat)
                                             } else {
                                                 scope.launch { snackbarHostState.showSnackbar(error) }
@@ -858,7 +1004,7 @@ fun AddListingScreen(
                                     }
                                 },
                                 enabled = !isLoading,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -869,7 +1015,7 @@ fun AddListingScreen(
                                 } else {
                                     Icon(Icons.Default.Add, contentDescription = null)
                                     Spacer(modifier = Modifier.size(8.dp))
-                                    Text("Add", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Text("Add Service", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 }
                             }
                         }

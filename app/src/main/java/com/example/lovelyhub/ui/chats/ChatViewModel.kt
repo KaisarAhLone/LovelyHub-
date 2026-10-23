@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lovelyhub.data.model.ChatConversation
 import com.example.lovelyhub.data.model.ChatMessage
 import com.example.lovelyhub.data.repository.ChatRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,8 +24,12 @@ class ChatViewModel(
     private val _isLoadingConversations = MutableStateFlow(true)
     val isLoadingConversations: StateFlow<Boolean> = _isLoadingConversations.asStateFlow()
 
+    private var conversationJob: Job? = null
+    private var messageJob: Job? = null
+
     fun listenToMessages(receiverUid: String) {
-        viewModelScope.launch {
+        messageJob?.cancel()
+        messageJob = viewModelScope.launch {
             repository.getRealtimeMessages(receiverUid).collect { msgList ->
                 _messages.value = msgList
             }
@@ -32,7 +37,8 @@ class ChatViewModel(
     }
 
     fun listenToConversations() {
-        viewModelScope.launch {
+        if (conversationJob?.isActive == true) return
+        conversationJob = viewModelScope.launch {
             _isLoadingConversations.value = true
             repository.getRealtimeConversations().collect { convList ->
                 _conversations.value = convList

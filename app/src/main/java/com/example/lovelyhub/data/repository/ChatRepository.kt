@@ -7,11 +7,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.concurrent.ConcurrentHashMap
 
 class ChatRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
@@ -19,6 +22,14 @@ class ChatRepository(
 ) {
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
+    private val userCache = ConcurrentHashMap<String, CachedUserInfo>()
+
+    private data class CachedUserInfo(
+        val name: String,
+        val photoUrl: String,
+        val phone: String,
+        val whatsApp: String
+    )
 
     fun generateChatId(uid1: String, uid2: String): String {
         return if (uid1 < uid2) "${uid1}_$uid2" else "${uid2}_$uid1"
@@ -71,23 +82,22 @@ class ChatRepository(
             .collection("messages")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
+                if (error != null || snapshot == null) {
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
-                if (snapshot != null) {
-                    val messages = snapshot.toObjects(ChatMessage::class.java)
-                    trySend(messages)
 
-                    repositoryScope.launch {
-                        for (doc in snapshot.documents) {
-                            val msgReceiver = doc.getString("receiverUid") ?: ""
-                            val isRead = doc.getBoolean("read") ?: false
-                            if (msgReceiver == senderUid && !isRead) {
-                                try {
-                                    doc.reference.update("read", true).await()
-                                } catch (_: Exception) {}
-                            }
+                val messages = snapshot.toObjects(ChatMessage::class.java)
+                trySend(messages)
+
+                repositoryScope.launch {
+                    for (doc in snapshot.documents) {
+                        val msgReceiver = doc.getString("receiverUid") ?: ""
+                        val isRead = doc.getBoolean("read") ?: false
+                        if (msgReceiver == senderUid && !isRead) {
+                            try {
+                                doc.reference.update("read", true).await()
+                            } catch (_: Exception) {}
                         }
                     }
                 }
@@ -107,27 +117,26 @@ class ChatRepository(
         val listener = firestore.collection("chats")
             .whereArrayContains("participants", currentUid)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
+                if (error != null || snapshot == null || snapshot.isEmpty) {
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
 
-                if (snapshot != null) {
-                    if (snapshot.isEmpty) {
-                        trySend(emptyList())
-                        return@addSnapshotListener
-                    }
-
-                    repositoryScope.launch {
-                        val conversations = mutableListOf<ChatConversation>()
-                        for (doc in snapshot.documents) {
-                            val participants = doc.get("participants") as? List<*> ?: emptyList<String>()
-                            val otherUid = participants.firstOrNull { it != currentUid }?.toString() ?: ""
+                repositoryScope.launch {
+                    val deferredList = snapshot.documents.map { doc ->
+                        async(Dispatchers.IO) {
+                            val participants = doc.get("participants") as? List<*> ?: emptyList<Any>()
+                            val otherUid = participants.firstOrNull { it.toString() != currentUid }?.toString() ?: ""
                             val lastMsg = doc.getString("lastMessage") ?: ""
                             val time = doc.getLong("timestamp") ?: System.currentTimeMillis()
                             val chatId = doc.id
 
-                            if (otherUid.isNotBlank()) {
+                            if (otherUid.isBlank()) return@async null
+
+                            val cached = userCache[otherUid]
+                            val userInfo = if (cached != null) {
+                                cached
+                            } else {
                                 try {
                                     val userDoc = firestore.collection("users").document(otherUid).get().await()
                                     val name = userDoc.getString("businessName").takeIf { !it.isNullOrBlank() }
@@ -137,33 +146,43 @@ class ChatRepository(
                                     val phone = userDoc.getString("businessPhone").takeIf { !it.isNullOrBlank() } ?: ""
                                     val whatsApp = userDoc.getString("businessWhatsApp").takeIf { !it.isNullOrBlank() } ?: phone
 
-                                    val unreadDocs = firestore.collection("chats")
-                                        .document(chatId)
-                                        .collection("messages")
-                                        .whereEqualTo("receiverUid", currentUid)
-                                        .whereEqualTo("read", false)
-                                        .get()
-                                        .await()
-
-                                    conversations.add(
-                                        ChatConversation(
-                                            chatId = chatId,
-                                            otherUid = otherUid,
-                                            otherName = name,
-                                            otherPhotoUrl = photo,
-                                            otherPhone = phone,
-                                            otherWhatsApp = whatsApp,
-                                            lastMessage = lastMsg,
-                                            unreadCount = unreadDocs.size(),
-                                            timestamp = time
-                                        )
-                                    )
-                                } catch (_: Exception) {}
+                                    val fetched = CachedUserInfo(name, photo, phone, whatsApp)
+                                    userCache[otherUid] = fetched
+                                    fetched
+                                } catch (_: Exception) {
+                                    CachedUserInfo("Campus User", "", "", "")
+                                }
                             }
+
+                            val unreadCount = try {
+                                val unreadDocs = firestore.collection("chats")
+                                    .document(chatId)
+                                    .collection("messages")
+                                    .whereEqualTo("receiverUid", currentUid)
+                                    .whereEqualTo("read", false)
+                                    .get()
+                                    .await()
+                                unreadDocs.size()
+                            } catch (_: Exception) {
+                                0
+                            }
+
+                            ChatConversation(
+                                chatId = chatId,
+                                otherUid = otherUid,
+                                otherName = userInfo.name,
+                                otherPhotoUrl = userInfo.photoUrl,
+                                otherPhone = userInfo.phone,
+                                otherWhatsApp = userInfo.whatsApp,
+                                lastMessage = lastMsg,
+                                unreadCount = unreadCount,
+                                timestamp = time
+                            )
                         }
-                        conversations.sortByDescending { it.timestamp }
-                        trySend(conversations.toList())
                     }
+
+                    val results = deferredList.awaitAll().filterNotNull().sortedByDescending { it.timestamp }
+                    trySend(results)
                 }
             }
 

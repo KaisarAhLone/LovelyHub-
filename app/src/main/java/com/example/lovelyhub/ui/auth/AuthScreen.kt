@@ -90,6 +90,8 @@ import com.example.lovelyhub.R
 import com.example.lovelyhub.data.model.UserRole
 import com.example.lovelyhub.ui.components.GoogleSignInButton
 import com.example.lovelyhub.ui.components.MapLocationHelper
+import com.example.lovelyhub.ui.theme.LovelyBgLight
+import com.example.lovelyhub.ui.theme.LovelyHeaderGradient
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Locale
@@ -127,7 +129,7 @@ fun AuthScreen(
 
     val webClientId = stringResource(R.string.default_web_client_id)
 
-    val screenBackground = com.example.lovelyhub.ui.theme.LovelyBgLight
+    val screenBackground = LovelyBgLight
 
     fun showClockPicker(onTimeSelected: (String) -> Unit) {
         val cal = Calendar.getInstance()
@@ -201,7 +203,7 @@ fun AuthScreen(
                         .fillMaxWidth()
                         .height(210.dp)
                         .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
-                        .background(com.example.lovelyhub.ui.theme.LovelyHeaderGradient),
+                        .background(LovelyHeaderGradient),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -300,51 +302,102 @@ fun AuthScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        AnimatedVisibility(visible = selectedTabIndex == 1) {
-                            Column {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(130.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFFF0E5FC))
-                                        .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
-                                        .clickable { imagePickerLauncher.launch("image/*") },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (profileImageUri != null) {
-                                        AsyncImage(
-                                            model = profileImageUri,
-                                            contentDescription = "Photo",
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
+                        if (selectedTabIndex == 1) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(130.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFFF0E5FC))
+                                    .border(
+                                        width = if (profileImageUri == null) 1.8.dp else 1.dp,
+                                        color = if (profileImageUri == null) Color(0xFF673AB7) else Color.Gray.copy(alpha = 0.3f),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable { imagePickerLauncher.launch("image/*") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (profileImageUri != null) {
+                                    AsyncImage(
+                                        model = profileImageUri,
+                                        contentDescription = "Photo",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.CameraAlt,
+                                            contentDescription = null,
+                                            tint = Color(0xFF673AB7),
+                                            modifier = Modifier.size(32.dp)
                                         )
-                                    } else {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(
-                                                imageVector = Icons.Default.CameraAlt,
-                                                contentDescription = null,
-                                                tint = Color(0xFF673AB7),
-                                                modifier = Modifier.size(32.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Upload Profile / Cover Photo",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF673AB7)
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Upload Profile / Cover Photo * (Required)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF673AB7)
+                                        )
                                     }
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            OutlinedTextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                label = { Text("Full Name") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = selectedRole.displayName,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Account Type / Role") },
+                                    trailingIcon = {
+                                        IconButton(onClick = { isRoleDropdownExpanded = true }) {
+                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                DropdownMenu(
+                                    expanded = isRoleDropdownExpanded,
+                                    onDismissRequest = { isRoleDropdownExpanded = false },
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                ) {
+                                    UserRole.entries.forEach { role ->
+                                        DropdownMenuItem(
+                                            text = { Text(role.displayName, fontSize = 14.sp) },
+                                            onClick = {
+                                                selectedRole = role
+                                                isRoleDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (selectedRole == UserRole.STUDENT) {
+                                Spacer(modifier = Modifier.height(12.dp))
 
                                 OutlinedTextField(
-                                    value = name,
-                                    onValueChange = { name = it },
-                                    label = { Text("Full Name") },
-                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    value = email,
+                                    onValueChange = { email = it },
+                                    label = { Text("Email Address") },
+                                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
@@ -352,230 +405,363 @@ fun AuthScreen(
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    OutlinedTextField(
-                                        value = selectedRole.displayName,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Account Type / Role") },
-                                        trailingIcon = {
-                                            IconButton(onClick = { isRoleDropdownExpanded = true }) {
-                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-
-                                    DropdownMenu(
-                                        expanded = isRoleDropdownExpanded,
-                                        onDismissRequest = { isRoleDropdownExpanded = false },
-                                        modifier = Modifier.fillMaxWidth(0.85f)
-                                    ) {
-                                        UserRole.entries.forEach { role ->
-                                            DropdownMenuItem(
-                                                text = { Text(role.displayName, fontSize = 14.sp) },
-                                                onClick = {
-                                                    selectedRole = role
-                                                    isRoleDropdownExpanded = false
-                                                }
+                                OutlinedTextField(
+                                    value = password,
+                                    onValueChange = { password = it },
+                                    label = { Text("Password") },
+                                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    trailingIcon = {
+                                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                            Icon(
+                                                imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                contentDescription = "Toggle Password",
+                                                tint = Color.Gray
                                             )
                                         }
+                                    },
+                                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (profileImageUri == null) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
+                                            return@Button
+                                        }
+                                        if (name.isBlank()) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please enter your Full Name") }
+                                            return@Button
+                                        }
+                                        if (email.isBlank() || password.isBlank()) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please enter Email Address and Password") }
+                                            return@Button
+                                        }
+                                        viewModel.signUpWithEmail(
+                                            context = context,
+                                            name = name,
+                                            email = email,
+                                            password = password,
+                                            role = selectedRole.displayName,
+                                            imageUri = profileImageUri
+                                        )
+                                    },
+                                    enabled = authState !is AuthState.Loading,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                                ) {
+                                    if (authState is AuthState.Loading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color.White,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Register as Student",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
                                     }
                                 }
 
-                                if (selectedRole != UserRole.STUDENT) {
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(18.dp))
 
-                                    OutlinedTextField(
-                                        value = businessName,
-                                        onValueChange = { businessName = it },
-                                        label = { Text("Shop / Hotel / Business Name") },
-                                        leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = Color(0xFF673AB7)) },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
+                                    Text(
+                                        text = "  OR  ",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        fontWeight = FontWeight.Bold
                                     )
+                                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
+                                }
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(18.dp))
 
-                                    OutlinedTextField(
-                                        value = businessPhone,
-                                        onValueChange = { businessPhone = it },
-                                        label = { Text("Business Calling Phone Number") },
-                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    OutlinedTextField(
-                                        value = businessWhatsApp,
-                                        onValueChange = { businessWhatsApp = it },
-                                        label = { Text("WhatsApp Number for Orders (Optional)") },
-                                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF2E7D32)) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        OutlinedTextField(
-                                            value = businessLocation,
-                                            onValueChange = { businessLocation = it },
-                                            label = { Text("Campus Location") },
-                                            leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
-                                            singleLine = true,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    MapLocationHelper.openMapPicker(context, businessLocation)
-                                                },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(10.dp)
-                                            ) {
-                                                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
-                                            }
-
-                                            OutlinedButton(
-                                                onClick = {
-                                                    locationPermissionLauncher.launch(
-                                                        arrayOf(
-                                                            Manifest.permission.ACCESS_FINE_LOCATION,
-                                                            Manifest.permission.ACCESS_COARSE_LOCATION
-                                                        )
-                                                    )
-                                                },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(10.dp)
-                                            ) {
-                                                if (isFetchingGps) {
-                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
-                                                } else {
-                                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
-                                                }
-                                            }
+                                GoogleSignInButton(
+                                    text = "Continue with Google",
+                                    onClick = {
+                                        if (profileImageUri == null) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
+                                            return@GoogleSignInButton
                                         }
+                                        viewModel.signInWithGoogle(
+                                            context = context,
+                                            webClientId = webClientId,
+                                            isRegistration = true,
+                                            name = name,
+                                            role = selectedRole.displayName,
+                                            imageUri = profileImageUri
+                                        )
                                     }
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedTextField(
+                                    value = businessName,
+                                    onValueChange = { businessName = it },
+                                    label = { Text("Shop / Hotel / Business Name") },
+                                    leadingIcon = { Icon(Icons.Default.Storefront, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                OutlinedTextField(
+                                    value = businessPhone,
+                                    onValueChange = { businessPhone = it },
+                                    label = { Text("Business Calling Phone Number") },
+                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                OutlinedTextField(
+                                    value = businessWhatsApp,
+                                    onValueChange = { businessWhatsApp = it },
+                                    label = { Text("WhatsApp Number for Orders (Optional)") },
+                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF2E7D32)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = businessLocation,
+                                        onValueChange = { businessLocation = it },
+                                        label = { Text("Campus Location") },
+                                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Checkbox(
-                                            checked = is24Hours,
-                                            onCheckedChange = { is24Hours = it },
-                                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
-                                        )
-                                        Text("Open 24 Hours", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                    }
-
-                                    if (!is24Hours) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        OutlinedButton(
+                                            onClick = {
+                                                MapLocationHelper.openMapPicker(context, businessLocation)
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)
                                         ) {
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                OutlinedTextField(
-                                                    value = openTime,
-                                                    onValueChange = {},
-                                                    readOnly = true,
-                                                    label = { Text("Open Time") },
-                                                    leadingIcon = {
-                                                        IconButton(onClick = { showClockPicker { openTime = it } }) {
-                                                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
-                                                        }
-                                                    },
-                                                    singleLine = true,
-                                                    modifier = Modifier.fillMaxWidth().clickable {
-                                                        showClockPicker { openTime = it }
-                                                    },
-                                                    shape = RoundedCornerShape(12.dp)
-                                                )
-                                            }
+                                            Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Select on Map", fontSize = 12.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.SemiBold)
+                                        }
 
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                OutlinedTextField(
-                                                    value = closeTime,
-                                                    onValueChange = {},
-                                                    readOnly = true,
-                                                    label = { Text("Close Time") },
-                                                    leadingIcon = {
-                                                        IconButton(onClick = { showClockPicker { closeTime = it } }) {
-                                                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
-                                                        }
-                                                    },
-                                                    singleLine = true,
-                                                    modifier = Modifier.fillMaxWidth().clickable {
-                                                        showClockPicker { closeTime = it }
-                                                    },
-                                                    shape = RoundedCornerShape(12.dp)
+                                        OutlinedButton(
+                                            onClick = {
+                                                locationPermissionLauncher.launch(
+                                                    arrayOf(
+                                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                                    )
                                                 )
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            if (isFetchingGps) {
+                                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF673AB7))
+                                            } else {
+                                                Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF673AB7), modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Current GPS", fontSize = 12.sp, color = Color(0xFF673AB7), fontWeight = FontWeight.SemiBold)
                                             }
                                         }
                                     }
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
-                            }
-                        }
 
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("Email Address") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF673AB7)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF673AB7)) },
-                            trailingIcon = {
-                                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                    Icon(
-                                        imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                        contentDescription = "Toggle Password",
-                                        tint = Color.Gray
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Checkbox(
+                                        checked = is24Hours,
+                                        onCheckedChange = { is24Hours = it },
+                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF673AB7))
                                     )
+                                    Text("Open 24 Hours", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 }
-                            },
-                            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
 
-                        if (selectedTabIndex == 0) {
+                                if (!is24Hours) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedTextField(
+                                                value = openTime,
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                label = { Text("Open Time") },
+                                                leadingIcon = {
+                                                    IconButton(onClick = { showClockPicker { openTime = it } }) {
+                                                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
+                                                    }
+                                                },
+                                                singleLine = true,
+                                                modifier = Modifier.fillMaxWidth().clickable {
+                                                    showClockPicker { openTime = it }
+                                                },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedTextField(
+                                                value = closeTime,
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                label = { Text("Close Time") },
+                                                leadingIcon = {
+                                                    IconButton(onClick = { showClockPicker { closeTime = it } }) {
+                                                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF673AB7))
+                                                    }
+                                                },
+                                                singleLine = true,
+                                                modifier = Modifier.fillMaxWidth().clickable {
+                                                    showClockPicker { closeTime = it }
+                                                },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = null,
+                                            tint = Color(0xFFD97706),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = "Shopkeeper & Rental accounts must register using Google Sign-In for campus verification.",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF92400E),
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                GoogleSignInButton(
+                                    text = "Register Shop with Google",
+                                    onClick = {
+                                        if (profileImageUri == null) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
+                                            return@GoogleSignInButton
+                                        }
+                                        if (name.isBlank()) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please enter your Full Name") }
+                                            return@GoogleSignInButton
+                                        }
+                                        if (businessName.isBlank()) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please enter Shop / Business Name") }
+                                            return@GoogleSignInButton
+                                        }
+                                        if (businessPhone.isBlank()) {
+                                            scope.launch { snackbarHostState.showSnackbar("Please enter Business Calling Phone Number") }
+                                            return@GoogleSignInButton
+                                        }
+                                        viewModel.signInWithGoogle(
+                                            context = context,
+                                            webClientId = webClientId,
+                                            isRegistration = true,
+                                            name = name,
+                                            role = selectedRole.displayName,
+                                            businessName = businessName,
+                                            businessPhone = businessPhone,
+                                            businessWhatsApp = businessWhatsApp,
+                                            businessLocation = businessLocation,
+                                            openTime = openTime,
+                                            closeTime = closeTime,
+                                            is24Hours = is24Hours,
+                                            imageUri = profileImageUri
+                                        )
+                                    }
+                                )
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                label = { Text("Email Address") },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("Password") },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF673AB7)) },
+                                trailingIcon = {
+                                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                        Icon(
+                                            imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                            contentDescription = "Toggle Password",
+                                            tint = Color.Gray
+                                        )
+                                    }
+                                },
+                                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -591,134 +777,128 @@ fun AuthScreen(
                                     )
                                 }
                             }
-                        } else {
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = {
-                                if (selectedTabIndex == 1) {
-                                    viewModel.signUpWithEmail(
-                                        context = context,
-                                        name = name,
-                                        email = email,
-                                        password = password,
-                                        role = selectedRole.displayName,
-                                        businessName = businessName,
-                                        businessPhone = businessPhone,
-                                        businessWhatsApp = businessWhatsApp,
-                                        businessLocation = businessLocation,
-                                        openTime = openTime,
-                                        closeTime = closeTime,
-                                        is24Hours = is24Hours,
-                                        imageUri = profileImageUri
+                            Button(
+                                onClick = {
+                                    viewModel.signInWithEmail(email, password)
+                                },
+                                enabled = authState !is AuthState.Loading,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
+                            ) {
+                                if (authState is AuthState.Loading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
                                     )
                                 } else {
-                                    viewModel.signInWithEmail(email, password)
+                                    Text(
+                                        text = "Login",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
-                            },
-                            enabled = authState !is AuthState.Loading,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
-                        ) {
-                            if (authState is AuthState.Loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
                                 Text(
-                                    text = if (selectedTabIndex == 1) "Register" else "Login",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    text = "  OR  ",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
                                 )
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = Color.Gray.copy(alpha = 0.3f)
-                            )
-                            Text(
-                                text = "  OR  ",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.Medium
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = Color.Gray.copy(alpha = 0.3f)
+                            GoogleSignInButton(
+                                onClick = {
+                                    viewModel.signInWithGoogle(context, webClientId)
+                                }
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        GoogleSignInButton(
-                            text = "Continue with Google",
-                            onClick = {
-                                viewModel.signInWithGoogle(context, webClientId)
-                            }
-                        )
                     }
                 }
-            }
 
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    )
+                }
+            }
         }
     }
 
     if (showForgotPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
-            title = { Text("Reset Password", fontWeight = FontWeight.Bold) },
+            title = {
+                Text(text = "Reset Password", fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+            },
             text = {
                 Column {
-                    Text("Enter your email address to receive a password reset link.")
+                    Text(
+                        text = "Enter your email address below to receive password reset instructions.",
+                        fontSize = 13.sp,
+                        color = Color.Gray
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = resetEmail,
                         onValueChange = { resetEmail = it },
                         label = { Text("Email Address") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.resetPassword(resetEmail) {
-                            showForgotPasswordDialog = false
+                        viewModel.resetPassword(resetEmail) { error ->
+                            if (error == null) {
+                                showForgotPasswordDialog = false
+                                resetEmail = ""
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Password reset link sent to your email!")
+                                }
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(error)
+                                }
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF673AB7))
                 ) {
-                    Text("Send Reset Link")
+                    Text("Send Reset Link", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showForgotPasswordDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color.Gray)
                 }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }

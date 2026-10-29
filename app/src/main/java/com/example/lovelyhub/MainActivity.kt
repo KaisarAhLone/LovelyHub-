@@ -3,13 +3,15 @@ package com.example.lovelyhub
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lovelyhub.ui.auth.AuthScreen
 import com.example.lovelyhub.ui.auth.AuthState
@@ -21,7 +23,12 @@ import com.example.lovelyhub.ui.theme.LovelyHubTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+
         setContent {
             LovelyHubTheme {
                 LovelyHubApp()
@@ -46,6 +53,7 @@ fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
             HomeScreen(
                 viewModel = authViewModel,
                 onSignOut = {
+                    authViewModel.signOut()
                 }
             )
         } else {

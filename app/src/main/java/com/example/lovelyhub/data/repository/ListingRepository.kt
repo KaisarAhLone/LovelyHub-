@@ -76,6 +76,13 @@ class ListingRepository {
             allItems.filter { favoriteIds.contains(it.id) || it.isFavorite }
         } else if (category.equals("Restaurants", ignoreCase = true) || category.equals("Food", ignoreCase = true)) {
             allItems.filter { it.category.equals("Restaurants", ignoreCase = true) || it.category.equals("Food", ignoreCase = true) }
+        } else if (category.equals("Services", ignoreCase = true) || category.contains("Services", ignoreCase = true) || category.contains("Laundry", ignoreCase = true) || category.contains("Cleaning", ignoreCase = true) || category.contains("Repair", ignoreCase = true) || category.contains("Plumber", ignoreCase = true) || category.contains("Electrician", ignoreCase = true)) {
+            allItems.filter {
+                it.category.equals("Services", ignoreCase = true) ||
+                        it.category.contains("Services", ignoreCase = true) ||
+                        it.category.contains(category, ignoreCase = true) ||
+                        category.contains(it.category, ignoreCase = true)
+            }
         } else {
             allItems.filter { it.category.equals(category, ignoreCase = true) }
         }

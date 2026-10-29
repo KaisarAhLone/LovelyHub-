@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -50,6 +52,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +69,7 @@ import coil.compose.AsyncImage
 import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.components.MapLocationHelper
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -82,10 +86,19 @@ fun ChatDetailScreen(
     val context = LocalContext.current
     val currentUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val messages by viewModel.messages.collectAsState()
+    val isSending by viewModel.isSendingMessage.collectAsState()
     var inputText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(receiverUid) {
-        viewModel.listenToMessages(receiverUid)
+        viewModel.listenToMessages(context, receiverUid)
+    }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.scrollToItem(messages.size - 1)
+        }
     }
 
     Scaffold(
@@ -139,7 +152,7 @@ fun ChatDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3F51B5))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
             )
         }
     ) { innerPadding ->
@@ -152,10 +165,11 @@ fun ChatDetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF3F4F9))
+                    .background(Color(0xFFFDF2F8))
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -190,7 +204,7 @@ fun ChatDetailScreen(
                                                     bottomEnd = if (isMe) 2.dp else 16.dp
                                                 )
                                             )
-                                            .background(if (isMe) Color(0xFF3F51B5) else Color.White)
+                                            .background(if (isMe) com.example.lovelyhub.ui.theme.LovelyPurplePrimary else Color.White)
                                             .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
                                         Column {
@@ -228,6 +242,7 @@ fun ChatDetailScreen(
                             onValueChange = { inputText = it },
                             placeholder = { Text("Type a message...", color = Color.Gray, fontSize = 14.sp) },
                             singleLine = true,
+                            enabled = !isSending,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(50.dp),
@@ -235,7 +250,7 @@ fun ChatDetailScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
                                 focusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFF3F51B5),
+                                focusedBorderColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary,
                                 unfocusedBorderColor = Color.Transparent
                             )
                         )
@@ -244,22 +259,34 @@ fun ChatDetailScreen(
 
                         IconButton(
                             onClick = {
-                                if (inputText.isNotBlank()) {
-                                    viewModel.sendMessage(receiverUid, inputText)
+                                if (inputText.isNotBlank() && !isSending) {
+                                    val textToSend = inputText
                                     inputText = ""
+                                    viewModel.sendMessage(receiverUid, textToSend) {
+                                        scope.launch {
+                                            if (messages.isNotEmpty()) {
+                                                listState.scrollToItem(messages.size - 1)
+                                            }
+                                        }
+                                    }
                                 }
                             },
+                            enabled = !isSending,
                             modifier = Modifier
                                 .size(46.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFFFD54F))
+                                .background(com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
-                                tint = Color(0xFF1E1E2D),
-                                modifier = Modifier.size(20.dp)
-                            )
+                            if (isSending) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Send",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

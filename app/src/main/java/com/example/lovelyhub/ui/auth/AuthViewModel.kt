@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lovelyhub.data.local.LocalUserCache
 import com.example.lovelyhub.data.model.User
 import com.example.lovelyhub.data.repository.AuthRepository
 import com.google.firebase.auth.FirebaseUser
@@ -38,9 +39,31 @@ class AuthViewModel(
         }
     }
 
-    fun loadUserProfile(uid: String) {
+    fun loadUserProfile(uid: String, context: Context? = null) {
         viewModelScope.launch {
-            _currentUserProfile.value = repository.fetchUserProfile(uid)
+            val userCache = context?.let { LocalUserCache(it) }
+            val cachedPhoto = userCache?.getProfilePhoto(uid)
+
+            if (!cachedPhoto.isNullOrBlank()) {
+                val current = _currentUserProfile.value
+                if (current == null) {
+                    _currentUserProfile.value = User(uid = uid, photoUrl = cachedPhoto)
+                } else if (current.photoUrl.isBlank()) {
+                    _currentUserProfile.value = current.copy(photoUrl = cachedPhoto)
+                }
+            }
+
+            val networkProfile = repository.fetchUserProfile(uid)
+            if (networkProfile != null) {
+                val finalPhoto = networkProfile.photoUrl.ifBlank { cachedPhoto ?: "" }
+                val updatedProfile = networkProfile.copy(photoUrl = finalPhoto)
+                _currentUserProfile.value = updatedProfile
+                if (finalPhoto.isNotBlank()) {
+                    userCache?.saveProfilePhotoBase64(uid, finalPhoto)
+                }
+            } else if (cachedPhoto != null && _currentUserProfile.value == null) {
+                _currentUserProfile.value = User(uid = uid, photoUrl = cachedPhoto)
+            }
         }
     }
 
@@ -115,13 +138,41 @@ class AuthViewModel(
         }
     }
 
-    fun signInWithGoogle(context: Context, webClientId: String) {
+    fun signInWithGoogle(
+        context: Context,
+        webClientId: String,
+        isRegistration: Boolean = false,
+        name: String = "",
+        role: String = "Student",
+        businessName: String = "",
+        businessPhone: String = "",
+        businessWhatsApp: String = "",
+        businessLocation: String = "",
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false,
+        imageUri: Uri? = null
+    ) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            repository.signInWithGoogle(context, webClientId)
+            repository.signInWithGoogle(
+                context = context,
+                webClientId = webClientId,
+                isRegistration = isRegistration,
+                name = name,
+                role = role,
+                businessName = businessName,
+                businessPhone = businessPhone,
+                businessWhatsApp = businessWhatsApp,
+                businessLocation = businessLocation,
+                openTime = openTime,
+                closeTime = closeTime,
+                is24Hours = is24Hours,
+                imageUri = imageUri
+            )
                 .onSuccess { user ->
                     _authState.value = AuthState.Success(user)
-                    loadUserProfile(user.uid)
+                    loadUserProfile(user.uid, context)
                 }
                 .onFailure { error ->
                     _authState.value = AuthState.Error(error.localizedMessage ?: "Google Sign-In failed")
@@ -130,6 +181,7 @@ class AuthViewModel(
     }
 
     fun updateUserProfile(
+        context: Context? = null,
         name: String,
         email: String,
         role: String,
@@ -141,6 +193,13 @@ class AuthViewModel(
     ) {
         val uid = repository.currentUser?.uid ?: return onResult("User not logged in")
         viewModelScope.launch {
+            val userCache = context?.let { LocalUserCache(it) }
+            if (photoUrl.isNotBlank()) {
+                userCache?.saveProfilePhotoBase64(uid, photoUrl)
+            } else {
+                userCache?.removeProfilePhoto(uid)
+            }
+
             repository.updateUserProfile(
                 uid = uid,
                 name = name.trim(),
@@ -152,7 +211,7 @@ class AuthViewModel(
                 photoUrl = photoUrl
             )
                 .onSuccess {
-                    loadUserProfile(uid)
+                    loadUserProfile(uid, context)
                     onResult(null)
                 }
                 .onFailure { error ->

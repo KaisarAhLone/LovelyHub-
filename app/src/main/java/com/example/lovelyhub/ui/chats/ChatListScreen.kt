@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,9 +37,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +47,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.lovelyhub.data.model.ChatConversation
+import com.example.lovelyhub.ui.theme.LovelyDarkPinkBg
+import com.example.lovelyhub.ui.theme.LovelyDarkPinkGradient
+import com.example.lovelyhub.ui.theme.LovelyDarkPinkSoft
+import com.example.lovelyhub.ui.theme.LovelyGreenOnline
+import com.example.lovelyhub.ui.theme.LovelyHeaderDarkPinkGradient
+import com.example.lovelyhub.ui.theme.LovelyPurplePrimary
+import com.example.lovelyhub.ui.theme.LovelyTextDark
+import com.example.lovelyhub.ui.theme.LovelyTextMuted
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,29 +64,23 @@ fun ChatListScreen(
     viewModel: ChatViewModel = viewModel(),
     onConversationClick: (ChatConversation) -> Unit
 ) {
+    val context = LocalContext.current
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.isLoadingConversations.collectAsState()
 
-    val topHeaderGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF3F51B5),
-            Color(0xFF5C6BC0),
-            Color(0xFFE8EAF6)
-        )
-    )
-
     LaunchedEffect(Unit) {
-        viewModel.listenToConversations()
+        viewModel.listenToConversations(context)
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent
+        color = LovelyDarkPinkBg
     ) {
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF3F4F9))
+                .background(LovelyDarkPinkGradient)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -83,26 +88,35 @@ fun ChatListScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(topHeaderGradient)
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                        .background(LovelyHeaderDarkPinkGradient)
+                        .padding(start = 20.dp, end = 20.dp, top = statusBarPadding + 14.dp, bottom = 20.dp)
                 ) {
-                    Text(
-                        text = "MY CHATS & MESSAGES",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
+                    Column {
+                        Text(
+                            text = "Messages & Chats",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Instant chats cached locally on your device",
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 when {
-                    isLoading -> {
+                    isLoading && conversations.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = Color(0xFF3F51B5))
+                            CircularProgressIndicator(color = LovelyDarkPinkSoft)
                         }
                     }
                     conversations.isEmpty() -> {
@@ -114,7 +128,7 @@ fun ChatListScreen(
                                 text = "No messages yet!\nClick Message on any Restaurant or Listing to start chatting.",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.DarkGray,
+                                color = LovelyDarkPinkSoft,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(24.dp)
                             )
@@ -154,20 +168,20 @@ fun ChatListScreen(
                                                 modifier = Modifier
                                                     .size(52.dp)
                                                     .clip(CircleShape)
-                                                    .border(2.dp, Color(0xFF3F51B5), CircleShape)
+                                                    .border(2.dp, LovelyPurplePrimary, CircleShape)
                                             )
                                         } else {
                                             Box(
                                                 modifier = Modifier
                                                     .size(52.dp)
                                                     .clip(CircleShape)
-                                                    .background(Color(0xFF3F51B5).copy(alpha = 0.15f)),
+                                                    .background(LovelyPurplePrimary.copy(alpha = 0.12f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Person,
                                                     contentDescription = null,
-                                                    tint = Color(0xFF3F51B5),
+                                                    tint = LovelyPurplePrimary,
                                                     modifier = Modifier.size(28.dp)
                                                 )
                                             }
@@ -185,13 +199,13 @@ fun ChatListScreen(
                                                     text = conv.otherName,
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.ExtraBold,
-                                                    color = Color(0xFF1E1E2D)
+                                                    color = LovelyTextDark
                                                 )
 
                                                 Text(
                                                     text = formattedTime,
                                                     fontSize = 11.sp,
-                                                    color = Color.Gray
+                                                    color = LovelyTextMuted
                                                 )
                                             }
 
@@ -205,7 +219,7 @@ fun ChatListScreen(
                                                 Text(
                                                     text = conv.lastMessage,
                                                     fontSize = 13.sp,
-                                                    color = Color.DarkGray,
+                                                    color = LovelyTextMuted,
                                                     maxLines = 1,
                                                     modifier = Modifier.weight(1f)
                                                 )
@@ -216,7 +230,7 @@ fun ChatListScreen(
                                                         modifier = Modifier
                                                             .size(22.dp)
                                                             .clip(CircleShape)
-                                                            .background(Color(0xFF25D366)),
+                                                            .background(LovelyGreenOnline),
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text(

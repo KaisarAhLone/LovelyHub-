@@ -2,7 +2,9 @@ package com.example.lovelyhub.ui.listings
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,13 +12,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +33,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
@@ -44,17 +52,21 @@ import androidx.compose.material.icons.filled.HomeWork
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PedalBike
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Plumbing
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
@@ -69,6 +81,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -130,6 +143,8 @@ fun ListingListScreen(
     var serviceSearchQuery by remember { mutableStateOf("") }
     var providerSearchQuery by remember { mutableStateOf("") }
     var selectedServiceFilter by remember { mutableStateOf<String?>(null) }
+    var selectedFavTab by remember { mutableStateOf("All") }
+    var selectedJobFilter by remember { mutableStateOf("All Jobs") }
 
     var showAddServiceDialog by remember { mutableStateOf(false) }
     var newServiceName by remember { mutableStateOf("") }
@@ -140,6 +155,12 @@ fun ListingListScreen(
     var isSubmittingService by remember { mutableStateOf(false) }
 
     val isServicesCategory = category.equals("Services", ignoreCase = true)
+    val isFavoritesCategory = category.equals("Favorites", ignoreCase = true)
+    val isJobsCategory = category.equals("Jobs", ignoreCase = true)
+    val isMarketplaceCategory = category.equals("Marketplace", ignoreCase = true)
+
+    val favCategories = listOf("All", "Restaurants", "Rooms", "Rentals", "Jobs", "Marketplace", "Services")
+    val jobFilterCategories = listOf("All Jobs", "Part-time", "Full-time", "On Campus", "Remote")
 
     val serviceCategories = remember {
         listOf(
@@ -161,24 +182,20 @@ fun ListingListScreen(
         )
     }
 
-    val topHeaderGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF3F51B5),
-            Color(0xFF5C6BC0),
-            Color(0xFFE8EAF6)
-        )
+    val topHeaderGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFEC4899), Color(0xFFDB2777))
     )
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color(0xFF1E1E2D),
         unfocusedTextColor = Color(0xFF1E1E2D),
-        focusedLabelColor = Color(0xFF3F51B5),
-        unfocusedLabelColor = Color(0xFF5C6BC0),
+        focusedLabelColor = Color(0xFFEC4899),
+        unfocusedLabelColor = Color(0xFFEC4899),
         focusedPlaceholderColor = Color.Gray,
         unfocusedPlaceholderColor = Color.Gray,
-        focusedLeadingIconColor = Color(0xFF3F51B5),
-        unfocusedLeadingIconColor = Color(0xFF3F51B5),
-        focusedBorderColor = Color(0xFF3F51B5),
+        focusedLeadingIconColor = Color(0xFFEC4899),
+        unfocusedLeadingIconColor = Color(0xFFEC4899),
+        focusedBorderColor = Color(0xFFEC4899),
         unfocusedBorderColor = Color.LightGray,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White
@@ -192,7 +209,7 @@ fun ListingListScreen(
         val cleanNum = targetNum.replace(Regex("[^0-9]"), "")
         val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
 
-        val msg = "Hello! I found your $serviceTitle on LovelyHub. I would like to inquire about your service."
+        val msg = "Hello! I found your $serviceTitle on LovelyHub. I would like to inquire about your item/service."
         val encodedMsg = Uri.encode(msg)
 
         val waUri = Uri.parse("https:" + "/" + "/api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
@@ -207,6 +224,7 @@ fun ListingListScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { innerPadding ->
         Surface(
@@ -218,7 +236,7 @@ fun ListingListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF3F4F9))
+                    .background(Color(0xFFFDF2F8))
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize()
@@ -227,12 +245,14 @@ fun ListingListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(topHeaderGradient)
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
                     ) {
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = {
                                         if (selectedServiceFilter != null) {
@@ -252,22 +272,48 @@ fun ListingListScreen(
 
                                 Spacer(modifier = Modifier.width(6.dp))
 
-                                Text(
-                                    text = if (selectedServiceFilter != null) selectedServiceFilter!! else category,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 18.sp,
-                                    color = Color.White
-                                )
+                                Column {
+                                    Text(
+                                        text = if (selectedServiceFilter != null) selectedServiceFilter!! else category,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = if (isMarketplaceCategory) "Buy and sell items near your campus" else (if (isFavoritesCategory) "All your saved items & services in one place" else (if (isJobsCategory) "Find trusted jobs near your campus" else (if (selectedServiceFilter != null) "Find service providers near you" else "Find trusted ${category.lowercase()} near your campus"))),
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.9f)
+                                    )
+                                }
                             }
+                        }
+                    }
 
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = if (selectedServiceFilter != null) "Find service providers near you" else "Find trusted services near your campus",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.9f),
-                                modifier = Modifier.padding(start = 38.dp)
-                            )
+                    if (isFavoritesCategory) {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White)
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(favCategories) { favCat ->
+                                val isSel = selectedFavTab.equals(favCat, ignoreCase = true)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(if (isSel) Color(0xFFEC4899) else Color(0xFFF0F1F5))
+                                        .clickable { selectedFavTab = favCat }
+                                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = favCat,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSel) Color.White else Color(0xFF1E1E2D)
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -391,7 +437,7 @@ fun ListingListScreen(
                                     newServiceLocation = "Phagwara, Punjab"
                                     showAddServiceDialog = true
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth().height(44.dp)
                             ) {
@@ -407,7 +453,7 @@ fun ListingListScreen(
                             when (val state = listingState) {
                                 is ListingState.Loading -> {
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(color = Color(0xFF3F51B5))
+                                        CircularProgressIndicator(color = Color(0xFFEC4899))
                                     }
                                 }
                                 is ListingState.Error -> {
@@ -416,9 +462,21 @@ fun ListingListScreen(
                                     }
                                 }
                                 is ListingState.Success -> {
-                                    val providers = state.items.filter {
-                                        (it.title.contains(selectedServiceFilter!!, ignoreCase = true) || it.category.contains(selectedServiceFilter!!, ignoreCase = true) || it.category.contains("Services", ignoreCase = true)) &&
-                                                (providerSearchQuery.isBlank() || it.title.contains(providerSearchQuery, ignoreCase = true) || it.location.contains(providerSearchQuery, ignoreCase = true))
+                                    val providers = state.items.filter { provider ->
+                                        val filterKey = selectedServiceFilter!!.trim()
+
+                                        val isThisSubService = provider.category.equals("Services|$filterKey", ignoreCase = true) ||
+                                                provider.category.endsWith("|$filterKey", ignoreCase = true) ||
+                                                provider.category.equals(filterKey, ignoreCase = true) ||
+                                                (provider.category.equals("Services", ignoreCase = true) &&
+                                                        (provider.menuItems.contains(filterKey) || provider.price.equals(filterKey, ignoreCase = true)))
+
+                                        val matchesQuery = providerSearchQuery.isBlank() ||
+                                                provider.title.contains(providerSearchQuery, ignoreCase = true) ||
+                                                provider.location.contains(providerSearchQuery, ignoreCase = true) ||
+                                                provider.price.contains(providerSearchQuery, ignoreCase = true)
+
+                                        isThisSubService && matchesQuery
                                     }
 
                                     if (providers.isEmpty()) {
@@ -438,7 +496,7 @@ fun ListingListScreen(
                                                     onClick = {
                                                         showAddServiceDialog = true
                                                     },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
                                                     shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Text("Be First to Add Your Service", fontWeight = FontWeight.Bold, color = Color.White)
@@ -452,9 +510,7 @@ fun ListingListScreen(
                                         ) {
                                             items(providers) { provider ->
                                                 Card(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable { onListingClick(provider) },
+                                                    modifier = Modifier.fillMaxWidth(),
                                                     shape = RoundedCornerShape(20.dp),
                                                     colors = CardDefaults.cardColors(containerColor = Color.White),
                                                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
@@ -477,7 +533,7 @@ fun ListingListScreen(
                                                                 Icon(
                                                                     imageVector = matchedCategoryObj?.icon ?: Icons.Default.Build,
                                                                     contentDescription = null,
-                                                                    tint = matchedCategoryObj?.iconColor ?: Color(0xFF3F51B5),
+                                                                    tint = matchedCategoryObj?.iconColor ?: Color(0xFFEC4899),
                                                                     modifier = Modifier.size(28.dp)
                                                                 )
                                                             }
@@ -495,7 +551,7 @@ fun ListingListScreen(
                                                                 Spacer(modifier = Modifier.height(2.dp))
 
                                                                 Text(
-                                                                    text = if (provider.price.isNotBlank() && !provider.price.startsWith("₹")) provider.price else selectedServiceFilter!!,
+                                                                    text = if (provider.price.isNotBlank() && !provider.price.startsWith("₹") && !provider.price.equals(selectedServiceFilter, ignoreCase = true)) provider.price else (matchedCategoryObj?.subtitle ?: selectedServiceFilter!!),
                                                                     fontSize = 13.sp,
                                                                     fontWeight = FontWeight.SemiBold,
                                                                     color = Color.Gray
@@ -530,7 +586,7 @@ fun ListingListScreen(
                                                                     .weight(1f)
                                                                     .height(42.dp),
                                                                 shape = RoundedCornerShape(12.dp),
-                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEDE7F6), contentColor = Color(0xFF5C6BC0)),
+                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCE4EC), contentColor = Color(0xFFEC4899)),
                                                                 contentPadding = PaddingValues(0.dp)
                                                             ) {
                                                                 Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -586,7 +642,7 @@ fun ListingListScreen(
                             when (val state = listingState) {
                                 is ListingState.Loading -> {
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(color = Color(0xFF3F51B5))
+                                        CircularProgressIndicator(color = Color(0xFFEC4899))
                                     }
                                 }
                                 is ListingState.Error -> {
@@ -595,7 +651,22 @@ fun ListingListScreen(
                                     }
                                 }
                                 is ListingState.Success -> {
-                                    val items = state.items
+                                    val items = if (isFavoritesCategory) {
+                                        val allFavs = state.items
+                                        if (selectedFavTab.equals("All", ignoreCase = true)) {
+                                            allFavs
+                                        } else {
+                                            allFavs.filter {
+                                                it.category.contains(selectedFavTab, ignoreCase = true) ||
+                                                        selectedFavTab.contains(it.category, ignoreCase = true) ||
+                                                        it.price.contains(selectedFavTab, ignoreCase = true) ||
+                                                        it.title.contains(selectedFavTab, ignoreCase = true)
+                                            }
+                                        }
+                                    } else {
+                                        state.items
+                                    }
+
                                     if (items.isEmpty()) {
                                         Box(
                                             modifier = Modifier
@@ -605,27 +676,107 @@ fun ListingListScreen(
                                         ) {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Text(
-                                                    text = "No listings in $category yet!",
+                                                    text = if (isFavoritesCategory) "No saved favorites in $selectedFavTab yet!" else "No listings in $category yet!",
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = Color.DarkGray
                                                 )
                                                 Spacer(modifier = Modifier.height(14.dp))
-                                                Button(
-                                                    onClick = onAddListingClick,
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
-                                                    shape = RoundedCornerShape(12.dp)
-                                                ) {
-                                                    Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color.White)
+                                                if (!isFavoritesCategory) {
+                                                    Button(
+                                                        onClick = onAddListingClick,
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Text("Add First Listing in $category", fontWeight = FontWeight.Bold, color = Color.White)
+                                                    }
                                                 }
                                             }
                                         }
                                     } else {
                                         LazyColumn(
                                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                            verticalArrangement = Arrangement.spacedBy(14.dp)
                                         ) {
-                                            items(items) { listing ->
+                                            item {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    OutlinedTextField(
+                                                        value = serviceSearchQuery,
+                                                        onValueChange = { serviceSearchQuery = it },
+                                                        placeholder = {
+                                                            Text(
+                                                                text = if (isJobsCategory) "Search jobs (e.g. store, part-time, LPU...)" else (if (isMarketplaceCategory) "Search items (e.g. phone, laptop, books...)" else "Search ${category.lowercase()}..."),
+                                                                color = Color.Gray,
+                                                                fontSize = 13.sp
+                                                            )
+                                                        },
+                                                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
+                                                        singleLine = true,
+                                                        shape = RoundedCornerShape(24.dp),
+                                                        colors = fieldColors,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(48.dp)
+                                                            .clip(RoundedCornerShape(16.dp))
+                                                            .background(Color.White)
+                                                            .border(1.2.dp, Color(0xFFFCE4EC), RoundedCornerShape(16.dp)),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(Icons.Default.Tune, contentDescription = "Filter", tint = Color(0xFFEC4899), modifier = Modifier.size(20.dp))
+                                                    }
+                                                }
+                                            }
+
+                                            if (isJobsCategory) {
+                                                item {
+                                                    LazyRow(
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        items(jobFilterCategories) { jobCat ->
+                                                            val isSel = selectedJobFilter.equals(jobCat, ignoreCase = true)
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(18.dp))
+                                                                    .background(if (isSel) Color(0xFFEC4899) else Color.White)
+                                                                    .border(1.dp, if (isSel) Color(0xFFEC4899) else Color(0xFFFCE4EC), RoundedCornerShape(18.dp))
+                                                                    .clickable { selectedJobFilter = jobCat }
+                                                                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                                                            ) {
+                                                                Text(
+                                                                    text = jobCat,
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = if (isSel) Color.White else Color(0xFF1E1E2D)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            val searchFilteredItems = items.filter { item ->
+                                                val matchesSearch = serviceSearchQuery.isBlank() ||
+                                                        item.title.contains(serviceSearchQuery, ignoreCase = true) ||
+                                                        item.location.contains(serviceSearchQuery, ignoreCase = true) ||
+                                                        item.price.contains(serviceSearchQuery, ignoreCase = true)
+
+                                                val matchesJobFilter = !isJobsCategory || selectedJobFilter.equals("All Jobs", ignoreCase = true) ||
+                                                        item.price.contains(selectedJobFilter, ignoreCase = true) ||
+                                                        item.title.contains(selectedJobFilter, ignoreCase = true)
+
+                                                matchesSearch && matchesJobFilter
+                                            }
+
+                                            items(searchFilteredItems) { listing ->
                                                 ListingCardItem(
                                                     listing = listing,
                                                     isOwner = currentUid.isNotBlank() && listing.ownerUid == currentUid,
@@ -634,6 +785,12 @@ fun ListingListScreen(
                                                         if (listing.phone.isNotBlank()) {
                                                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                             context.startActivity(intent)
+                                                        }
+                                                    },
+                                                    onWhatsAppClick = {
+                                                        val num = listing.whatsApp.ifBlank { listing.phone }
+                                                        if (num.isNotBlank()) {
+                                                            openWhatsApp(num, listing.title)
                                                         }
                                                     },
                                                     onFavoriteToggle = {
@@ -665,7 +822,7 @@ fun ListingListScreen(
             onDismissRequest = { if (!isSubmittingService) showAddServiceDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3F51B5))
+                    Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFFEC4899))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Add ${selectedServiceFilter!!}", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                 }
@@ -681,7 +838,7 @@ fun ListingListScreen(
                         onValueChange = { newServiceName = it },
                         label = { Text("Service / Business Name", fontWeight = FontWeight.Bold) },
                         placeholder = { Text("e.g. Quick Wash Laundry") },
-                        leadingIcon = { Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        leadingIcon = { Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFFEC4899)) },
                         singleLine = true,
                         colors = fieldColors,
                         modifier = Modifier.fillMaxWidth(),
@@ -695,7 +852,7 @@ fun ListingListScreen(
                         onValueChange = { newServiceSubtitle = it },
                         label = { Text("Specialization / Subtitle", fontWeight = FontWeight.Bold) },
                         placeholder = { Text("e.g. Laundry & Ironing") },
-                        leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        leadingIcon = { Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFFEC4899)) },
                         singleLine = true,
                         colors = fieldColors,
                         modifier = Modifier.fillMaxWidth(),
@@ -708,7 +865,7 @@ fun ListingListScreen(
                         value = newServicePhone,
                         onValueChange = { newServicePhone = it },
                         label = { Text("Call Phone Number", fontWeight = FontWeight.Bold) },
-                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFFEC4899)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
                         colors = fieldColors,
@@ -737,7 +894,7 @@ fun ListingListScreen(
                         onValueChange = { newServiceLocation = it },
                         label = { Text("Location / Address", fontWeight = FontWeight.Bold) },
                         placeholder = { Text("e.g. Phagwara, Punjab") },
-                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3F51B5)) },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899)) },
                         singleLine = true,
                         colors = fieldColors,
                         modifier = Modifier.fillMaxWidth(),
@@ -754,13 +911,15 @@ fun ListingListScreen(
                         }
 
                         isSubmittingService = true
+                        val targetSubService = selectedServiceFilter!!.trim()
                         val newServiceListing = Listing(
-                            category = selectedServiceFilter!!,
+                            category = "Services|$targetSubService",
                             title = newServiceName.trim(),
-                            price = if (newServiceSubtitle.isNotBlank()) newServiceSubtitle.trim() else selectedServiceFilter!!,
+                            price = if (newServiceSubtitle.isNotBlank()) newServiceSubtitle.trim() else targetSubService,
                             phone = newServicePhone.trim(),
                             whatsApp = if (newServiceWhatsApp.isNotBlank()) newServiceWhatsApp.trim() else newServicePhone.trim(),
-                            location = if (newServiceLocation.isNotBlank()) newServiceLocation.trim() else "Phagwara, Punjab"
+                            location = if (newServiceLocation.isNotBlank()) newServiceLocation.trim() else "Phagwara, Punjab",
+                            menuItems = listOf(targetSubService)
                         )
 
                         viewModel.postListing(context, newServiceListing, null) { error ->
@@ -780,7 +939,7 @@ fun ListingListScreen(
                         }
                     },
                     enabled = !isSubmittingService,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899))
                 ) {
                     if (isSubmittingService) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
@@ -836,13 +995,13 @@ fun ListingCardItem(
     isOwner: Boolean,
     onClick: () -> Unit,
     onCallClick: () -> Unit,
+    onWhatsAppClick: () -> Unit = {},
     onFavoriteToggle: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    val isOpen = listing.status.equals("Open", ignoreCase = true)
-    val isRoomOrRental = listing.category.equals("Rooms", ignoreCase = true) || listing.category.equals("Rentals", ignoreCase = true)
+    val context = LocalContext.current
     val isJob = listing.category.equals("Jobs", ignoreCase = true)
-    val cardBg = if (isOpen) Color.White else Color(0xFFEEEEEE)
+    val isMarketplace = listing.category.equals("Marketplace", ignoreCase = true)
 
     fun cleanLocationName(rawLocation: String): String {
         if (rawLocation.isBlank()) return "LPU Campus"
@@ -852,65 +1011,25 @@ fun ListingCardItem(
 
     val displayLocation = cleanLocationName(listing.location)
 
-    val priceDisplay = if (listing.price.startsWith("Open", ignoreCase = true)) {
-        "Starting ₹100"
-    } else if (listing.price.startsWith("₹")) {
-        "Starting ${listing.price}"
-    } else if (listing.price.contains("Starting", ignoreCase = true)) {
-        listing.price
-    } else {
-        "Pay: ${listing.price}"
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isOpen) 4.dp else 1.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (isJob) {
+    if (isMarketplace) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF3F51B5))
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Work, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("CAMPUS JOB OFFER", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .clickable { onFavoriteToggle() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
+                        .size(110.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 ) {
                     if (listing.imageUrl.isNotBlank()) {
                         val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
@@ -920,171 +1039,537 @@ fun ListingCardItem(
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
-                    } else {
-                        val icon = when (listing.category) {
-                            "Restaurants", "Food" -> Icons.Default.Restaurant
-                            "Rooms" -> Icons.Default.HomeWork
-                            "Rentals" -> Icons.Default.DirectionsCar
-                            "Jobs" -> Icons.Default.Work
-                            "Marketplace" -> Icons.Default.ShoppingBag
-                            else -> Icons.Default.Storefront
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(4.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.65f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("📷 1/${coverPhotos.size.coerceAtLeast(1)}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
+                    } else {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                .background(Color(0xFFFCE4EC)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = icon,
+                                imageVector = Icons.Default.ShoppingBag,
                                 contentDescription = null,
-                                tint = Color(0xFF3F51B5),
-                                modifier = Modifier.size(52.dp)
+                                tint = Color(0xFFEC4899),
+                                modifier = Modifier.size(42.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = listing.title,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1E1E2D),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        val formattedPrice = if (listing.price.startsWith("₹")) listing.price else "₹ ${listing.price}"
+                        Text(
+                            text = formattedPrice,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFEC4899)
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFCE4EC))
+                                .clickable { onFavoriteToggle() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (listing.isFavorite) Color(0xFFFF1744) else Color(0xFFEC4899),
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .clickable { onFavoriteToggle() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (listing.isFavorite) Color(0xFFFF1744) else Color.White,
-                            modifier = Modifier.size(16.dp)
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = displayLocation,
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
-                    if (!isRoomOrRental) {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .background(Color(0xFF1565C0).copy(alpha = 0.88f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFCE4EC)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = if (listing.is24Hours) "⚡ Open 24 Hours • Free Delivery" else "⏰ Open: ${listing.openTime} - ${listing.closeTime}",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(13.dp))
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Campus Seller", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E1E2D))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(11.dp))
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(listing.rating.ifBlank { "4.8" }, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                onWhatsAppClick()
+                            },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCE4EC), contentColor = Color(0xFFEC4899)),
+                            border = BorderStroke(1.2.dp, Color(0xFFEC4899)),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Chat", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = onClick,
+                            modifier = Modifier.weight(1.2f).height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("View Details", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
                 }
             }
-
+        }
+    } else {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .padding(12.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = listing.title,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF1E1E2D),
-                        modifier = Modifier.weight(1f)
-                    )
+                if (isJob) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        if (listing.imageUrl.isNotBlank()) {
+                            val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                            ListingImage(
+                                imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
+                                contentDescription = listing.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFFEDE7F6)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Work,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6D28D9),
+                                    modifier = Modifier.size(42.dp)
+                                )
+                            }
+                        }
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(
+                                    text = listing.title,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF1E1E2D),
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                        .clickable { onFavoriteToggle() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                        contentDescription = "Favorite",
+                                        tint = if (listing.isFavorite) Color(0xFFFF1744) else Color(0xFFEC4899),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = displayLocation,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Gray
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFEDE7F6))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Work, contentDescription = null, tint = Color(0xFF6D28D9), modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = if (listing.price.contains("Full", ignoreCase = true)) "Full-time" else "Part-time",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF6D28D9)
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFE8F5E9))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Flexible hours",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF2E7D32)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF2E7D32))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFFCE4EC))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(11.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            val is24Job = listing.is24Hours || listing.price.contains("24 Hours", ignoreCase = true) || listing.openTime.contains("24 Hours", ignoreCase = true) || listing.price.contains("24/7", ignoreCase = true)
                             Text(
-                                text = listing.rating.ifBlank { "4.3" },
-                                color = Color.White,
-                                fontSize = 11.sp,
+                                text = if (is24Job) "Open 24 Hours • Campus Job" else "Open: ${listing.openTime} - ${listing.closeTime}",
+                                color = Color(0xFF1E1E2D),
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
-                }
 
-                if (displayLocation.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = displayLocation,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2E7D32)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (!isRoomOrRental) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = priceDisplay,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFD84315)
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.width(1.dp))
-                    }
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (isOwner) {
-                            IconButton(onClick = onDeleteClick, modifier = Modifier.size(28.dp)) {
+                        Button(
+                            onClick = onCallClick,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Call", fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = onWhatsAppClick,
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("WhatsApp", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = {
+                                MapLocationHelper.openMapDirections(context, listing.location)
+                            },
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Get Directions", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                    ) {
+                        if (listing.imageUrl.isNotBlank()) {
+                            val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                            ListingImage(
+                                imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
+                                contentDescription = listing.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            val icon = when (listing.category) {
+                                "Restaurants", "Food" -> Icons.Default.Restaurant
+                                "Rooms" -> Icons.Default.HomeWork
+                                "Rentals" -> Icons.Default.DirectionsCar
+                                "Jobs" -> Icons.Default.Work
+                                "Marketplace" -> Icons.Default.ShoppingBag
+                                else -> Icons.Default.Storefront
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFFCE4EC)),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = Color(0xFFE53935),
-                                    modifier = Modifier.size(18.dp)
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEC4899),
+                                    modifier = Modifier.size(52.dp)
                                 )
                             }
                         }
 
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .align(Alignment.TopEnd)
+                                .padding(10.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF3F51B5))
-                                .clickable { onCallClick() },
+                                .background(Color.White)
+                                .clickable { onFavoriteToggle() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Call,
-                                contentDescription = "Call",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (listing.isFavorite) Color(0xFFFF1744) else Color(0xFFEC4899),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = listing.title,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1E1E2D)
+                            )
+
+                            if (displayLocation.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = displayLocation,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF2E7D32))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(12.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = listing.rating.ifBlank { "4.3" },
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp)
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onCallClick,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Call", fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = onWhatsAppClick,
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("WhatsApp", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = {
+                                MapLocationHelper.openMapDirections(context, listing.location)
+                            },
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Get Directions", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFFCE4EC))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            val is24Service = listing.is24Hours || listing.price.contains("24 Hours", ignoreCase = true) || listing.openTime.contains("24 Hours", ignoreCase = true) || listing.price.contains("24/7", ignoreCase = true)
+                            Text(
+                                text = if (is24Service) "Open 24 Hours • Free Service" else "Open: ${listing.openTime} - ${listing.closeTime}",
+                                color = Color(0xFF1E1E2D),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

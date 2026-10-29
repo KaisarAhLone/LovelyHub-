@@ -1,18 +1,24 @@
 {
   "project_info": {
     "project_number": "157913248379",
+    "firebase_url": "https://lovelyhub-18e18-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "lovelyhub-18e18",
     "storage_bucket": "lovelyhub-18e18.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:157913248379:android:c5e6e6193e7942b9d328de",
+        "mobilesdk_app_id": "1:157913248379:android:8571cf227792240dd328de",
         "android_client_info": {
-          "package_name": "com.example.lovelyhub"
+          "package_name": "com.kaisarlone.lovelyhub"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "157913248379-gedggn3duetqhh3b727a25v14usmpn9h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCtCUNTuaRULMoD85EOydwbPQQvcVsMuso"
@@ -20,7 +26,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "157913248379-gedggn3duetqhh3b727a25v14usmpn9h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -12,6 +12,7 @@ import com.example.lovelyhub.data.model.User
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -100,8 +101,8 @@ class AuthRepository(
                     whatsApp = finalWhatsApp,
                     location = businessLocation,
                     imageUrl = encodedPhoto,
-                    openTime = openTime,
-                    closeTime = closeTime,
+                    openTime = if (is24Hours) "Open 24 Hours" else openTime,
+                    closeTime = if (is24Hours) "Open 24 Hours" else closeTime,
                     is24Hours = is24Hours,
                     ownerUid = user.uid,
                     status = "Open",
@@ -114,12 +115,33 @@ class AuthRepository(
             }
 
             Result.success(user)
+        } catch (e: FirebaseAuthUserCollisionException) {
+            Result.failure(Exception("An account with this email address ($email) already exists! Please use the Login tab to sign in."))
         } catch (e: Exception) {
-            Result.failure(e)
+            val msg = if (e.message?.contains("already in use", ignoreCase = true) == true) {
+                "An account with this email address ($email) already exists! Please use the Login tab to sign in."
+            } else {
+                e.localizedMessage ?: "Registration failed"
+            }
+            Result.failure(Exception(msg))
         }
     }
 
-    suspend fun signInWithGoogle(context: Context, webClientId: String): Result<FirebaseUser> {
+    suspend fun signInWithGoogle(
+        context: Context,
+        webClientId: String,
+        isRegistration: Boolean = false,
+        name: String = "",
+        role: String = "Student",
+        businessName: String = "",
+        businessPhone: String = "",
+        businessWhatsApp: String = "",
+        businessLocation: String = "",
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false,
+        imageUri: Uri? = null
+    ): Result<FirebaseUser> {
         return try {
             val credentialManager = CredentialManager.create(context)
 
@@ -142,20 +164,79 @@ class AuthRepository(
             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
-                
+
                 val authResult = auth.signInWithCredential(firebaseCredential).await()
                 val user = authResult.user ?: return Result.failure(Exception("Firebase user is null"))
 
+                val encodedPhoto = if (imageUri != null) {
+                    listingRepository.compressAndEncodeImage(context, imageUri)
+                } else {
+                    user.photoUrl?.toString() ?: ""
+                }
+
+                val finalWhatsApp = businessWhatsApp.ifBlank { businessPhone }
+                val finalName = name.ifBlank { user.displayName ?: googleIdTokenCredential.displayName ?: "Campus User" }
+
                 val userDoc = firestore.collection("users").document(user.uid).get().await()
-                if (!userDoc.exists()) {
+
+                if (isRegistration) {
+                    if (userDoc.exists()) {
+                        val existingUser = userDoc.toObject(User::class.java)
+                        val existingRole = existingUser?.role ?: "a registered user"
+                        auth.signOut()
+                        return Result.failure(Exception("An account with email '${user.email}' already exists as '$existingRole'! Please use the Login tab to sign in."))
+                    }
+
                     val newUser = User(
                         uid = user.uid,
-                        name = user.displayName ?: googleIdTokenCredential.displayName ?: "User",
+                        name = finalName,
                         email = user.email ?: "",
-                        role = "Student",
-                        photoUrl = user.photoUrl?.toString() ?: ""
+                        role = role,
+                        businessName = businessName,
+                        businessPhone = businessPhone,
+                        businessWhatsApp = finalWhatsApp,
+                        businessLocation = businessLocation,
+                        openTime = openTime,
+                        closeTime = closeTime,
+                        is24Hours = is24Hours,
+                        photoUrl = encodedPhoto
                     )
                     firestore.collection("users").document(user.uid).set(newUser).await()
+
+                    if (role != "Student" && businessName.isNotBlank()) {
+                        val category = when (role) {
+                            "Restaurant Owner" -> "Restaurants"
+                            "Room / PG Owner" -> "Rooms"
+                            "Rental Provider" -> "Rentals"
+                            else -> "Marketplace"
+                        }
+
+                        val shopListing = Listing(
+                            id = user.uid,
+                            category = category,
+                            title = businessName,
+                            price = if (is24Hours) "Open 24 Hours" else "Open: $openTime - $closeTime",
+                            phone = businessPhone,
+                            whatsApp = finalWhatsApp,
+                            location = businessLocation,
+                            imageUrl = encodedPhoto,
+                            openTime = if (is24Hours) "Open 24 Hours" else openTime,
+                            closeTime = if (is24Hours) "Open 24 Hours" else closeTime,
+                            is24Hours = is24Hours,
+                            ownerUid = user.uid,
+                            status = "Open",
+                            isShop = true
+                        )
+
+                        try {
+                            firestore.collection("listings").document(user.uid).set(shopListing).await()
+                        } catch (_: Exception) {}
+                    }
+                } else {
+                    if (!userDoc.exists()) {
+                        auth.signOut()
+                        return Result.failure(Exception("No account found for '${user.email}'. Please use the Register tab to create an account."))
+                    }
                 }
 
                 Result.success(user)
@@ -205,16 +286,24 @@ class AuthRepository(
                     "Restaurant Owner" -> "Restaurants"
                     "Room / PG Owner" -> "Rooms"
                     "Rental Provider" -> "Rentals"
-                    "Service Provider" -> "Services"
                     else -> "Marketplace"
                 }
+
+                val userDoc = firestore.collection("users").document(uid).get().await()
+                val is24 = userDoc.getBoolean("is24Hours") ?: false
+                val oTime = userDoc.getString("openTime") ?: "09:00 AM"
+                val cTime = userDoc.getString("closeTime") ?: "10:00 PM"
 
                 val shopUpdates = mutableMapOf<String, Any>(
                     "title" to businessName,
                     "phone" to businessPhone,
                     "location" to businessLocation,
                     "category" to category,
-                    "isShop" to true
+                    "isShop" to true,
+                    "is24Hours" to is24,
+                    "openTime" to (if (is24) "Open 24 Hours" else oTime),
+                    "closeTime" to (if (is24) "Open 24 Hours" else cTime),
+                    "price" to (if (is24) "Open 24 Hours" else "Open: $oTime - $cTime")
                 )
                 if (photoUrl.isNotBlank()) {
                     shopUpdates["imageUrl"] = photoUrl
@@ -227,10 +316,13 @@ class AuthRepository(
                         id = uid,
                         category = category,
                         title = businessName,
-                        price = "Open for Business",
+                        price = if (is24) "Open 24 Hours" else "Open: $oTime - $cTime",
                         phone = businessPhone,
                         location = businessLocation,
                         imageUrl = photoUrl,
+                        openTime = if (is24) "Open 24 Hours" else oTime,
+                        closeTime = if (is24) "Open 24 Hours" else cTime,
+                        is24Hours = is24,
                         ownerUid = uid,
                         status = "Open",
                         isShop = true

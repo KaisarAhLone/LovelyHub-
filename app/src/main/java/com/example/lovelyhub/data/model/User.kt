@@ -20,6 +20,5 @@ enum class UserRole(val displayName: String, val defaultCategory: String) {
     STUDENT("Student", "Marketplace"),
     RESTAURANT_OWNER("Restaurant Owner", "Restaurants"),
     ROOM_OWNER("Room / PG Owner", "Rooms"),
-    RENTAL_PROVIDER("Rental Provider", "Rentals"),
-    SERVICE_PROVIDER("Service Provider", "Services")
+    RENTAL_PROVIDER("Rental Provider", "Rentals")
 }

@@ -143,7 +143,7 @@ fun AddListingScreen(
     var roomType by remember { mutableStateOf("Single Room") }
     var isRoomTypeDropdownExpanded by remember { mutableStateOf(false) }
 
-    var vehicleBodyType by remember { mutableStateOf("Hatchback") }
+    var vehicleBodyType by remember { mutableStateOf("Car") }
     var isBodyTypeDropdownExpanded by remember { mutableStateOf(false) }
     var fuelType by remember { mutableStateOf("Petrol") }
     var isFuelDropdownExpanded by remember { mutableStateOf(false) }
@@ -158,7 +158,7 @@ fun AddListingScreen(
     var rate6hr by remember { mutableStateOf("") }
     var rateDay by remember { mutableStateOf("") }
 
-    val bodyTypeOptions = listOf("Hatchback", "Sedan", "SUV", "MPV", "Scooty", "Bike")
+    val bodyTypeOptions = listOf("Car", "Bike", "Scooty")
     val fuelTypeOptions = listOf("Petrol", "Diesel", "Electric (EV)")
     val transmissionOptions = listOf("Automatic", "Manual")
 
@@ -181,7 +181,7 @@ fun AddListingScreen(
     var isLoading by remember { mutableStateOf(false) }
     var isFetchingLocation by remember { mutableStateOf(false) }
 
-    val roomTypeOptions = listOf("Single Room", "Double Sharing", "Triple Sharing", "1BHK Flat")
+    val roomTypeOptions = listOf("Single Room", "Double Sharing", "Triple Sharing", "1BHK Flat", "2BHK Flat")
     val jobTypeOptions = listOf("Part-time", "Full-time", "Internship", "Freelance / On-Demand")
 
     val fieldColors = OutlinedTextFieldDefaults.colors(

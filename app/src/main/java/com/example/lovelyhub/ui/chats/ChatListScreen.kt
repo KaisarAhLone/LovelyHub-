@@ -1,5 +1,6 @@
 package com.example.lovelyhub.ui.chats
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.lovelyhub.data.model.ChatConversation
+import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.theme.LovelyDarkPinkBg
 import com.example.lovelyhub.ui.theme.LovelyDarkPinkGradient
 import com.example.lovelyhub.ui.theme.LovelyDarkPinkSoft
@@ -146,13 +148,16 @@ fun ChatListScreen(
                                     ""
                                 }
 
+                                val isUnread = conv.unreadCount > 0
+
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onConversationClick(conv) },
                                     shape = RoundedCornerShape(18.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                                    colors = CardDefaults.cardColors(containerColor = if (isUnread) Color(0xFFFDF2F8) else Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = if (isUnread) 4.dp else 2.dp),
+                                    border = if (isUnread) BorderStroke(1.2.dp, Color(0xFF25D366)) else null
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -160,29 +165,42 @@ fun ChatListScreen(
                                             .padding(14.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        if (conv.otherPhotoUrl.isNotBlank()) {
-                                            AsyncImage(
-                                                model = conv.otherPhotoUrl,
-                                                contentDescription = conv.otherName,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .size(52.dp)
-                                                    .clip(CircleShape)
-                                                    .border(2.dp, LovelyPurplePrimary, CircleShape)
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(52.dp)
-                                                    .clip(CircleShape)
-                                                    .background(LovelyPurplePrimary.copy(alpha = 0.12f)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    tint = LovelyPurplePrimary,
-                                                    modifier = Modifier.size(28.dp)
+                                        Box(modifier = Modifier.size(52.dp)) {
+                                            if (conv.otherPhotoUrl.isNotBlank()) {
+                                                ListingImage(
+                                                    imageUrl = conv.otherPhotoUrl,
+                                                    contentDescription = conv.otherName,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .border(2.dp, if (isUnread) Color(0xFF25D366) else LovelyPurplePrimary, CircleShape)
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .background(LovelyPurplePrimary.copy(alpha = 0.12f)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Person,
+                                                        contentDescription = null,
+                                                        tint = LovelyPurplePrimary,
+                                                        modifier = Modifier.size(28.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            if (isUnread) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(15.dp)
+                                                        .align(Alignment.TopEnd)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF25D366))
+                                                        .border(2.dp, Color.White, CircleShape)
                                                 )
                                             }
                                         }
@@ -205,7 +223,8 @@ fun ChatListScreen(
                                                 Text(
                                                     text = formattedTime,
                                                     fontSize = 11.sp,
-                                                    color = LovelyTextMuted
+                                                    fontWeight = if (isUnread) FontWeight.ExtraBold else FontWeight.Normal,
+                                                    color = if (isUnread) Color(0xFF25D366) else LovelyTextMuted
                                                 )
                                             }
 
@@ -219,24 +238,25 @@ fun ChatListScreen(
                                                 Text(
                                                     text = conv.lastMessage,
                                                     fontSize = 13.sp,
-                                                    color = LovelyTextMuted,
+                                                    fontWeight = if (isUnread) FontWeight.ExtraBold else FontWeight.Medium,
+                                                    color = if (isUnread) Color(0xFF1E1E2D) else LovelyTextMuted,
                                                     maxLines = 1,
                                                     modifier = Modifier.weight(1f)
                                                 )
 
-                                                if (conv.unreadCount > 0) {
+                                                if (isUnread) {
                                                     Spacer(modifier = Modifier.width(6.dp))
                                                     Box(
                                                         modifier = Modifier
-                                                            .size(22.dp)
-                                                            .clip(CircleShape)
-                                                            .background(LovelyGreenOnline),
+                                                            .clip(RoundedCornerShape(12.dp))
+                                                            .background(Color(0xFF25D366))
+                                                            .padding(horizontal = 8.dp, vertical = 3.dp),
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text(
-                                                            text = "${conv.unreadCount}",
+                                                            text = "NEW",
                                                             color = Color.White,
-                                                            fontSize = 11.sp,
+                                                            fontSize = 10.sp,
                                                             fontWeight = FontWeight.ExtraBold
                                                         )
                                                     }

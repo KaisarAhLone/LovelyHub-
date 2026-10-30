@@ -189,6 +189,9 @@ class AuthViewModel(
         businessPhone: String = "",
         businessLocation: String = "",
         photoUrl: String,
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false,
         onResult: (String?) -> Unit
     ) {
         val uid = repository.currentUser?.uid ?: return onResult("User not logged in")
@@ -208,7 +211,10 @@ class AuthViewModel(
                 businessName = businessName.trim(),
                 businessPhone = businessPhone.trim(),
                 businessLocation = businessLocation.trim(),
-                photoUrl = photoUrl
+                photoUrl = photoUrl,
+                openTime = openTime,
+                closeTime = closeTime,
+                is24Hours = is24Hours
             )
                 .onSuccess {
                     loadUserProfile(uid, context)
@@ -230,6 +236,20 @@ class AuthViewModel(
             repository.resetPassword(email.trim())
                 .onSuccess { onComplete(null) }
                 .onFailure { error -> onComplete(error.localizedMessage ?: "Failed to send reset email") }
+        }
+    }
+
+    fun deleteUserAccount(context: Context, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            repository.deleteUserAccount(context)
+                .onSuccess {
+                    _currentUserProfile.value = null
+                    _authState.value = AuthState.Idle
+                    onResult(null)
+                }
+                .onFailure { error ->
+                    onResult(error.localizedMessage ?: "Failed to delete account")
+                }
         }
     }
 

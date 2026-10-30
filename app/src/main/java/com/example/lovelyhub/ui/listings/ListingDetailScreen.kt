@@ -172,6 +172,7 @@ fun ListingDetailScreen(
     val cart = remember { mutableStateListOf<LocalCartItem>() }
     var showCartDialog by remember { mutableStateOf(false) }
     var showCheckoutDialog by remember { mutableStateOf(false) }
+    var showWhatsAppOrderPopup by remember { mutableStateOf(false) }
     var expandedImageUrl by remember { mutableStateOf<String?>(null) }
     var selectedSubRoom by remember { mutableStateOf<SubRoomDetail?>(null) }
 
@@ -848,14 +849,14 @@ fun ListingDetailScreen(
                                             colors = CardDefaults.cardColors(containerColor = Color.White),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                                         ) {
-                                            Column(modifier = Modifier.padding(12.dp)) {
+                                            Column(modifier = Modifier.padding(14.dp)) {
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    verticalAlignment = Alignment.Top
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Box(
                                                         modifier = Modifier
-                                                            .size(width = 110.dp, height = 110.dp)
+                                                            .size(width = 110.dp, height = 100.dp)
                                                             .clip(RoundedCornerShape(14.dp))
                                                     ) {
                                                         if (car.photoUrl.isNotBlank()) {
@@ -877,6 +878,17 @@ fun ListingDetailScreen(
                                                                 Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(42.dp))
                                                             }
                                                         }
+
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .align(Alignment.BottomEnd)
+                                                                .padding(4.dp)
+                                                                .clip(RoundedCornerShape(8.dp))
+                                                                .background(Color.Black.copy(alpha = 0.65f))
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text("📷 1/2", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                        }
                                                     }
 
                                                     Spacer(modifier = Modifier.width(12.dp))
@@ -887,10 +899,13 @@ fun ListingDetailScreen(
                                                             horizontalArrangement = Arrangement.SpaceBetween,
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                modifier = Modifier.weight(1f)
+                                                            ) {
                                                                 Text(
                                                                     text = car.modelName,
-                                                                    fontSize = 16.sp,
+                                                                    fontSize = 17.sp,
                                                                     fontWeight = FontWeight.ExtraBold,
                                                                     color = Color(0xFF1E1E2D)
                                                                 )
@@ -903,7 +918,7 @@ fun ListingDetailScreen(
                                                                         .background(Color(0xFFFCE4EC))
                                                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                                                 ) {
-                                                                    Text(car.bodyType, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
+                                                                    Text(car.bodyType, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
                                                                 }
                                                             }
 
@@ -918,105 +933,105 @@ fun ListingDetailScreen(
                                                             }
                                                         }
 
+                                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                                        val displayHrPrice = if (car.rate1hr.startsWith("₹")) car.rate1hr else "₹${car.rate1hr}"
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Text(
+                                                                text = displayHrPrice,
+                                                                fontSize = 18.sp,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = Color(0xFFEC4899)
+                                                            )
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("/ Per Hour", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                                                        }
+
                                                         Spacer(modifier = Modifier.height(6.dp))
 
                                                         Row(
-                                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Text("👤 ${car.seats}", fontSize = 10.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                                            Text("⛽ ${car.fuelType}", fontSize = 10.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                                            Text("⚙️ ${car.transmission}", fontSize = 10.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                                            Text("🧳 ${car.bags}", fontSize = 10.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                                        }
-
-                                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                                        Row(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .clip(RoundedCornerShape(8.dp))
-                                                                    .border(1.dp, Color(0xFFEC4899), RoundedCornerShape(8.dp))
-                                                                    .padding(vertical = 4.dp),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                    Text(if (car.rate1hr.startsWith("₹")) car.rate1hr else "₹${car.rate1hr}", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
-                                                                    Text("Per Hour", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                                                                }
-                                                            }
-
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .clip(RoundedCornerShape(8.dp))
-                                                                    .background(Color(0xFFFCE4EC))
-                                                                    .padding(vertical = 4.dp),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                    Text(if (car.rate3hr.startsWith("₹")) car.rate3hr else "₹${car.rate3hr}", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
-                                                                    Text("3 Hours", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                                                                }
-                                                            }
-
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .clip(RoundedCornerShape(8.dp))
-                                                                    .background(Color(0xFFFCE4EC))
-                                                                    .padding(vertical = 4.dp),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                    Text(if (car.rate6hr.startsWith("₹")) car.rate6hr else "₹${car.rate6hr}", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
-                                                                    Text("6 Hours", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                                                                }
-                                                            }
-
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .clip(RoundedCornerShape(8.dp))
-                                                                    .background(Color(0xFFFCE4EC))
-                                                                    .padding(vertical = 4.dp),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                    Text(if (car.rateDay.startsWith("₹")) car.rateDay else "₹${car.rateDay}", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
-                                                                    Text("Per Day", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                                                                }
-                                                            }
+                                                            Text("👤 ${car.seats}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
+                                                            Text("|", fontSize = 11.sp, color = Color.LightGray)
+                                                            Text("⛽ ${car.fuelType}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
+                                                            Text("|", fontSize = 11.sp, color = Color.LightGray)
+                                                            Text("⚙️ ${car.transmission}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }
 
-                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Spacer(modifier = Modifier.height(12.dp))
 
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
-                                                    Button(
-                                                        onClick = {
-                                                            if (listing.ownerUid.isNotBlank()) {
-                                                                onMessageClick(listing.ownerUid, "${car.modelName} Rental Booking", listing.imageUrl)
-                                                            }
-                                                        },
-                                                        modifier = Modifier.weight(1f).height(40.dp),
-                                                        shape = RoundedCornerShape(10.dp),
-                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
-                                                        contentPadding = PaddingValues(0.dp)
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(Color(0xFFFCE4EC))
+                                                            .border(1.2.dp, Color(0xFFEC4899), RoundedCornerShape(10.dp))
+                                                            .padding(vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center
                                                     ) {
-                                                        Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(15.dp))
-                                                        Spacer(modifier = Modifier.width(4.dp))
-                                                        Text("Rent Now", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(if (car.rate1hr.startsWith("₹")) car.rate1hr else "₹${car.rate1hr}", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
+                                                            Text("Per Hour", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
+                                                        }
                                                     }
 
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(Color(0xFFFFF0F5))
+                                                            .padding(vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(if (car.rate3hr.startsWith("₹")) car.rate3hr else "₹${car.rate3hr}", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
+                                                            Text("3 Hours", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
+                                                        }
+                                                    }
+
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(Color(0xFFFFF0F5))
+                                                            .padding(vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(if (car.rate6hr.startsWith("₹")) car.rate6hr else "₹${car.rate6hr}", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
+                                                            Text("6 Hours", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
+                                                        }
+                                                    }
+
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(Color(0xFFFFF0F5))
+                                                            .padding(vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(if (car.rateDay.startsWith("₹")) car.rateDay else "₹${car.rateDay}", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFEC4899))
+                                                            Text("Per Day", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
+                                                        }
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(12.dp))
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
                                                     OutlinedButton(
                                                         onClick = {
                                                             if (listing.phone.isNotBlank()) {
@@ -1024,12 +1039,69 @@ fun ListingDetailScreen(
                                                                 try { context.startActivity(intent) } catch (_: Exception) {}
                                                             }
                                                         },
-                                                        modifier = Modifier.weight(1f).height(40.dp),
+                                                        modifier = Modifier.weight(1f).height(38.dp),
                                                         shape = RoundedCornerShape(10.dp),
-                                                        border = BorderStroke(1.2.dp, Color(0xFFEC4899)),
+                                                        border = BorderStroke(1.dp, Color(0xFFEC4899)),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEC4899)),
                                                         contentPadding = PaddingValues(0.dp)
                                                     ) {
-                                                        Text("View Details", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFEC4899))
+                                                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                        Spacer(modifier = Modifier.width(2.dp))
+                                                        Text("Call", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                                    }
+
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            val targetNum = listing.whatsApp.ifBlank { listing.phone }
+                                                            if (targetNum.isNotBlank()) {
+                                                                val cleanNum = targetNum.replace(Regex("[^0-9]"), "")
+                                                                val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
+                                                                val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$fullNum&text=" + Uri.encode("Hello! Interested in renting ${car.modelName}"))
+                                                                try { context.startActivity(Intent(Intent.ACTION_VIEW, waUri)) } catch (_: Exception) {}
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1.3f).height(38.dp),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        border = BorderStroke(1.dp, Color(0xFF25D366)),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF25D366)),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                        Spacer(modifier = Modifier.width(2.dp))
+                                                        Text("WhatsApp", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                                    }
+
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            if (listing.ownerUid.isNotBlank()) {
+                                                                onMessageClick(listing.ownerUid, "${car.modelName} Rental Inquiry", listing.imageUrl)
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1f).height(38.dp),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        border = BorderStroke(1.dp, Color(0xFFEC4899)),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEC4899)),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                        Spacer(modifier = Modifier.width(2.dp))
+                                                        Text("Chat", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                                    }
+
+                                                    Button(
+                                                        onClick = {
+                                                            if (listing.ownerUid.isNotBlank()) {
+                                                                onMessageClick(listing.ownerUid, "${car.modelName} Rental Booking", listing.imageUrl)
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1.4f).height(38.dp),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                        Spacer(modifier = Modifier.width(2.dp))
+                                                        Text("Rent Now", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                                     }
                                                 }
                                             }
@@ -1561,11 +1633,42 @@ fun ListingDetailScreen(
 
                             val subRooms = if (listing.menuItems.isNotEmpty()) {
                                 listing.menuItems.map { menuItemStr ->
-                                    val parts = menuItemStr.split("|")
-                                    val rName = parts.getOrNull(0)?.trim() ?: "Room"
-                                    val rPrice = parts.getOrNull(1)?.trim() ?: listing.price
-                                    val rPhoto = parts.getOrNull(2)?.trim() ?: galleryPhotos.firstOrNull() ?: ""
-                                    SubRoomDetail(rName, rPrice, rPhoto)
+                                    val parts = menuItemStr.split("|").map { it.trim() }
+                                    val firstPart = parts.getOrNull(0) ?: "Room"
+
+                                    var rName = firstPart
+                                    var rPrice = ""
+                                    var rPhoto = ""
+
+                                    if (firstPart.contains(" - ")) {
+                                        val dashParts = firstPart.split(" - ")
+                                        rName = dashParts[0].trim()
+                                        val p = dashParts.getOrNull(1)?.trim() ?: ""
+                                        if (p.startsWith("₹") || p.matches(Regex("^[0-9.]+$")) || p.contains("/")) {
+                                            rPrice = if (p.startsWith("₹")) p else "₹$p"
+                                        }
+                                    }
+
+                                    for (i in 1 until parts.size) {
+                                        val p = parts[i]
+                                        if (p.isBlank()) continue
+
+                                        if (p.contains("data:image") || p.contains("http") || p.contains("content://") || p.contains("file:/")) {
+                                            if (rPhoto.isBlank()) rPhoto = p
+                                        } else if (p.startsWith("₹") || p.matches(Regex("^[0-9.]+$")) || p.contains("/month") || p.contains("/day")) {
+                                            if (rPrice.isBlank()) rPrice = if (p.startsWith("₹")) p else "₹$p"
+                                        }
+                                    }
+
+                                    if (rPhoto.isBlank()) {
+                                        rPhoto = galleryPhotos.firstOrNull() ?: listing.imageUrl
+                                    }
+
+                                    SubRoomDetail(
+                                        name = rName,
+                                        priceText = rPrice.ifBlank { listing.price },
+                                        photoUrl = rPhoto
+                                    )
                                 }
                             } else {
                                 emptyList()
@@ -1590,9 +1693,10 @@ fun ListingDetailScreen(
                                     }
                                 }
                             } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                                     subRooms.forEach { sub ->
                                         val cleanPrice = if (sub.priceText.startsWith("₹")) sub.priceText else "₹${sub.priceText}"
+                                        val mainPriceVal = if (cleanPrice.contains("/")) cleanPrice.split("/")[0].trim() else cleanPrice
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -1607,89 +1711,124 @@ fun ListingDetailScreen(
                                                     .padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                if (sub.photoUrl.isNotBlank()) {
-                                                    ListingImage(
-                                                        imageUrl = sub.photoUrl,
-                                                        contentDescription = sub.name,
-                                                        contentScale = ContentScale.Crop,
-                                                        modifier = Modifier
-                                                            .size(80.dp)
-                                                            .clip(RoundedCornerShape(14.dp))
-                                                    )
-                                                } else {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(80.dp)
-                                                            .clip(RoundedCornerShape(14.dp))
-                                                            .background(Color(0xFFFCE4EC)),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(Icons.Default.Bed, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(36.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(width = 130.dp, height = 130.dp)
+                                                        .clip(RoundedCornerShape(16.dp))
+                                                ) {
+                                                    if (sub.photoUrl.isNotBlank()) {
+                                                        ListingImage(
+                                                            imageUrl = sub.photoUrl,
+                                                            contentDescription = sub.name,
+                                                            contentScale = ContentScale.Crop,
+                                                            modifier = Modifier.fillMaxSize()
+                                                        )
+                                                    } else {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(Color(0xFFFCE4EC)),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Icon(Icons.Default.Bed, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(42.dp))
+                                                        }
                                                     }
                                                 }
 
-                                                Spacer(modifier = Modifier.width(14.dp))
+                                                Spacer(modifier = Modifier.width(12.dp))
 
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
                                                         text = sub.name,
-                                                        fontSize = 16.sp,
+                                                        fontSize = 17.sp,
                                                         fontWeight = FontWeight.ExtraBold,
                                                         color = Color(0xFF1E1E2D)
                                                     )
 
                                                     Spacer(modifier = Modifier.height(2.dp))
 
-                                                    Text(
-                                                        text = if (cleanPrice.contains("/")) cleanPrice else "$cleanPrice / month",
-                                                        fontSize = 15.sp,
-                                                        fontWeight = FontWeight.ExtraBold,
-                                                        color = Color(0xFFEC4899)
-                                                    )
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(
+                                                            text = mainPriceVal,
+                                                            fontSize = 18.sp,
+                                                            fontWeight = FontWeight.ExtraBold,
+                                                            color = Color(0xFFEC4899)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text(
+                                                            text = "/ month",
+                                                            fontSize = 12.sp,
+                                                            color = Color.Gray,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
 
-                                                    Spacer(modifier = Modifier.height(6.dp))
+                                                    Spacer(modifier = Modifier.height(8.dp))
 
-                                                    Row(
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
+                                                    Column(
+                                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                                        modifier = Modifier.fillMaxWidth()
                                                     ) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(8.dp))
-                                                                .background(Color(0xFFFCE4EC))
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        Row(
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Text("🛏️ 1 Person", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(8.dp))
+                                                                    .background(Color(0xFFFFF0F5))
+                                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                            ) {
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Icon(Icons.Default.Wifi, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(12.dp))
+                                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                                    Text("Wi-Fi", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+                                                                }
+                                                            }
+
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(8.dp))
+                                                                    .background(Color(0xFFFFF0F5))
+                                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                            ) {
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Icon(Icons.Default.Shower, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(12.dp))
+                                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                                    Text("Attached Bathroom", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+                                                                }
+                                                            }
                                                         }
 
                                                         Box(
                                                             modifier = Modifier
                                                                 .clip(RoundedCornerShape(8.dp))
-                                                                .background(Color(0xFFE0F2FE))
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                .background(Color(0xFFFFF0F5))
+                                                                .padding(horizontal = 8.dp, vertical = 4.dp)
                                                         ) {
-                                                            Text("📶 WiFi", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
-                                                        }
-
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(8.dp))
-                                                                .background(Color(0xFFFFEBEE))
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                                        ) {
-                                                            Text("🚿 Attached", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF5350))
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Icon(Icons.Default.Bed, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(12.dp))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("Furnished", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
+                                                            }
                                                         }
                                                     }
-                                                }
 
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(32.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(0xFFFCE4EC)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(12.dp))
+                                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                                    Button(
+                                                        onClick = { selectedSubRoom = sub },
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(38.dp),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Text("View Details", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, modifier = Modifier.size(12.dp))
+                                                    }
                                                 }
                                             }
                                         }
@@ -2305,48 +2444,35 @@ fun ListingDetailScreen(
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     filteredDishes.forEach { menuItemStr ->
-                                        var itemName = menuItemStr
                                         var itemPrice = listing.price
                                         var itemPhoto = ""
-                                        var itemDesc = "Delicious and fresh campus food prepared with quality ingredients."
+                                        var itemDesc = ""
 
-                                        val parts = menuItemStr.split("|")
-                                        if (parts.size >= 3) {
-                                            itemName = parts[0].trim()
-                                            val p2 = parts[1].trim()
-                                            val p3 = parts[2].trim()
+                                        val parts = menuItemStr.split("|").map { it.trim() }
 
-                                            if (p2.contains("data:image") || p2.contains("http") || p2.contains("content://")) {
-                                                itemPhoto = p2
-                                                itemDesc = p3
-                                            } else {
-                                                itemPrice = p2
-                                                if (p3.contains("data:image") || p3.contains("http") || p3.contains("content://")) {
-                                                    itemPhoto = p3
-                                                } else {
-                                                    itemDesc = p3
-                                                }
-                                            }
-                                        } else if (parts.size == 2) {
-                                            itemName = parts[0].trim()
-                                            val second = parts[1].trim()
-                                            if (second.contains("data:image") || second.contains("http") || second.contains("content://")) {
-                                                itemPhoto = second
-                                            } else {
-                                                itemPrice = second
-                                            }
-                                        }
-
-                                        var cleanItemName = itemName
+                                        var cleanItemName = parts.getOrNull(0) ?: menuItemStr
                                         var extractedPrice = ""
 
                                         if (cleanItemName.contains("-")) {
                                             val dashParts = cleanItemName.split("-")
                                             val namePart = dashParts[0].trim()
-                                            val numPart = dashParts[1].trim()
+                                            val numPart = dashParts.getOrNull(1)?.trim() ?: ""
                                             if (numPart.matches(Regex("^[0-9.]+$")) || numPart.startsWith("₹")) {
                                                 cleanItemName = namePart
                                                 extractedPrice = if (numPart.startsWith("₹")) numPart else "₹$numPart"
+                                            }
+                                        }
+
+                                        for (i in 1 until parts.size) {
+                                            val p = parts[i]
+                                            if (p.isBlank()) continue
+
+                                            if (p.contains("data:image") || p.contains("http") || p.contains("content://") || p.contains("file:/")) {
+                                                if (itemPhoto.isBlank()) itemPhoto = p
+                                            } else if (p.startsWith("₹") || p.matches(Regex("^[0-9.]+$")) || p.contains("/day") || p.contains("/month")) {
+                                                if (extractedPrice.isBlank()) extractedPrice = if (p.startsWith("₹")) p else "₹$p"
+                                            } else {
+                                                if (itemDesc.isBlank()) itemDesc = p
                                             }
                                         }
 
@@ -2409,16 +2535,17 @@ fun ListingDetailScreen(
                                                         color = Color(0xFF1E1E2D)
                                                     )
 
-                                                    Spacer(modifier = Modifier.height(2.dp))
-
-                                                    Text(
-                                                        text = itemDesc,
-                                                        fontSize = 11.sp,
-                                                        color = Color.Gray,
-                                                        maxLines = 2,
-                                                        lineHeight = 15.sp,
-                                                        fontWeight = FontWeight.Medium
-                                                    )
+                                                    if (itemDesc.isNotBlank()) {
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            text = itemDesc,
+                                                            fontSize = 11.sp,
+                                                            color = Color.Gray,
+                                                            maxLines = 2,
+                                                            lineHeight = 15.sp,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
 
                                                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -2675,44 +2802,144 @@ fun ListingDetailScreen(
                             scope.launch { snackbarHostState.showSnackbar("Please enter Name and Phone Number") }
                             return@Button
                         }
-
                         showCheckoutDialog = false
-
-                        val orderSb = StringBuilder()
-                        orderSb.append("🍔 NEW CAMPUS ORDER PLACED!\n\n")
-                        orderSb.append("Restaurant: ${listing.title}\n")
-                        orderSb.append("Ordered Items:\n")
-
-                        cart.forEach { item ->
-                            val photoTag = if (item.photoUrl.isNotBlank()) " [IMAGE:${item.photoUrl}]" else ""
-                            orderSb.append("• ${item.quantity}x ${item.name} (${item.priceText})$photoTag\n")
-                        }
-
-                        orderSb.append("\nGrand Total: ₹${totalCartPrice.toInt()}\n")
-                        orderSb.append("Delivery Fee: ₹0 (FREE)\n\n")
-
-                        orderSb.append("👤 Customer: $custName\n")
-                        orderSb.append("📞 Phone: $custPhone\n")
-                        if (custPgName.isNotBlank()) orderSb.append("🏠 PG/Hostel: $custPgName\n")
-                        if (custLocation.isNotBlank()) orderSb.append("📍 Location: $custLocation\n")
-
-                        if (listing.ownerUid.isNotBlank()) {
-                            onSendOrderClick(listing.ownerUid, listing.title, listing.imageUrl, orderSb.toString())
-                        }
-
-                        cart.clear()
-                        scope.launch { snackbarHostState.showSnackbar("Order Sent Successfully to ${listing.title}!") }
+                        showWhatsAppOrderPopup = true
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) {
-                    Text("Place Order Now", fontWeight = FontWeight.Bold)
+                    Text("Proceed to Order", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showCartDialog = false }) {
+                TextButton(onClick = { showCheckoutDialog = false }) {
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    if (showWhatsAppOrderPopup) {
+        AlertDialog(
+            onDismissRequest = { showWhatsAppOrderPopup = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Smartphone,
+                        contentDescription = null,
+                        tint = Color(0xFF25D366),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Fast WhatsApp Order",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1E1E2D)
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFFE8F5E9))
+                            .border(1.dp, Color(0xFF2E7D32).copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "We process all campus food and delivery orders directly on WhatsApp for super-fast confirmation and live tracking from ${listing.title}!",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1B5E20),
+                            lineHeight = 17.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFFCE4EC))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total (${cart.sumOf { it.quantity }} items):",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E1E2D)
+                        )
+                        Text(
+                            text = "₹${totalCartPrice.toInt()}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFEC4899)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWhatsAppOrderPopup = false
+
+                        val waOrderSb = StringBuilder()
+                        waOrderSb.append("📱 *Order from LovelyHub*\n")
+                        waOrderSb.append("✅ *NEW ORDER RECEIVED - ${listing.title}* ✅\n\n")
+                        waOrderSb.append("*Ordered Items:*\n")
+
+                        cart.forEach { item ->
+                            waOrderSb.append("• ${item.quantity}x ${item.name} (${item.priceText})\n")
+                        }
+
+                        waOrderSb.append("\n💰 *Grand Total: ₹${totalCartPrice.toInt()}*\n\n")
+                        waOrderSb.append("*Customer & Delivery Info:*\n")
+                        waOrderSb.append("👤 *Name:* $custName\n")
+                        waOrderSb.append("📞 *Phone:* $custPhone\n")
+                        if (custPgName.isNotBlank()) waOrderSb.append("🏠 *PG/Hostel:* $custPgName\n")
+                        if (custLocation.isNotBlank()) {
+                            waOrderSb.append("📍 *Address:* $custLocation\n")
+                            val queryEncoded = Uri.encode(custLocation)
+                            waOrderSb.append("🗺️ *Location Link:* https://www.google.com/maps/search/?api=1&query=$queryEncoded\n")
+                        }
+
+                        val targetNum = listing.whatsApp.ifBlank { listing.phone }
+                        if (targetNum.isNotBlank()) {
+                            val cleanNum = targetNum.replace(Regex("[^0-9]"), "")
+                            val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
+                            val waUri = Uri.parse("https:" + "/" + "/api.whatsapp.com/send?phone=$fullNum&text=" + Uri.encode(waOrderSb.toString()))
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, waUri)
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                scope.launch { snackbarHostState.showSnackbar("Opening WhatsApp...") }
+                            }
+                        }
+
+                        cart.clear()
+                        scope.launch { snackbarHostState.showSnackbar("Order Sent Successfully on WhatsApp!") }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Send Order on WhatsApp", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWhatsAppOrderPopup = false }) {
+                    Text("Cancel", fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(22.dp)
         )
     }
 }

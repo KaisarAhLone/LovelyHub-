@@ -106,4 +106,14 @@ class LocalUserCache(private val context: Context) {
             .remove("last_cached_photo_path")
             .commit()
     }
+
+    fun hasAcceptedDisclaimer(uid: String = ""): Boolean {
+        val targetUid = uid.ifBlank { getCurrentUid() }
+        return prefs.getBoolean("accepted_disclaimer_$targetUid", false)
+    }
+
+    fun setAcceptedDisclaimer(accepted: Boolean, uid: String = "") {
+        val targetUid = uid.ifBlank { getCurrentUid() }
+        prefs.edit().putBoolean("accepted_disclaimer_$targetUid", accepted).commit()
+    }
 }

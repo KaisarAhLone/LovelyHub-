@@ -2,6 +2,7 @@ package com.example.lovelyhub.ui.listings
 
 import android.content.Intent
 import android.net.Uri
+import com.example.lovelyhub.data.local.LocalUserCache
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,6 +68,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
@@ -1020,163 +1022,187 @@ fun ListingCardItem(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(110.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (listing.imageUrl.isNotBlank()) {
-                        val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
-                        ListingImage(
-                            imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
-                            contentDescription = listing.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(4.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Black.copy(alpha = 0.65f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text("📷 1/${coverPhotos.size.coerceAtLeast(1)}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFFFCE4EC)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingBag,
-                                contentDescription = null,
-                                tint = Color(0xFFEC4899),
-                                modifier = Modifier.size(42.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        if (listing.imageUrl.isNotBlank()) {
+                            val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                            ListingImage(
+                                imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
+                                contentDescription = listing.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.Black.copy(alpha = 0.65f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text("📷 1/${coverPhotos.size.coerceAtLeast(1)}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFFCE4EC)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ShoppingBag,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEC4899),
+                                    modifier = Modifier.size(42.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = listing.title,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1E1E2D),
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            val formattedPrice = if (listing.price.startsWith("₹")) listing.price else "₹ ${listing.price}"
+                            Text(
+                                text = formattedPrice,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFEC4899)
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFCE4EC))
+                                    .clickable { onFavoriteToggle() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    tint = if (listing.isFavorite) Color(0xFFFF1744) else Color(0xFFEC4899),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = displayLocation,
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFCE4EC)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(13.dp))
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Campus Seller", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E1E2D))
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onCallClick,
+                        modifier = Modifier.weight(1f).height(38.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFFEC4899)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEC4899)),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text(
-                            text = listing.title,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF1E1E2D),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        val formattedPrice = if (listing.price.startsWith("₹")) listing.price else "₹ ${listing.price}"
-                        Text(
-                            text = formattedPrice,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFEC4899)
-                        )
-
-                        Spacer(modifier = Modifier.width(6.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .size(26.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFCE4EC))
-                                .clickable { onFavoriteToggle() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (listing.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = null,
-                                tint = if (listing.isFavorite) Color(0xFFFF1744) else Color(0xFFEC4899),
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Call", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
                     }
 
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = displayLocation,
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFCE4EC)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(13.dp))
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Campus Seller", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E1E2D))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(11.dp))
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(listing.rating.ifBlank { "4.8" }, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2D))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    OutlinedButton(
+                        onClick = onWhatsAppClick,
+                        modifier = Modifier.weight(1.3f).height(38.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFF25D366)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF25D366)),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                onWhatsAppClick()
-                            },
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCE4EC), contentColor = Color(0xFFEC4899)),
-                            border = BorderStroke(1.2.dp, Color(0xFFEC4899)),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Chat", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
+                        Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("WhatsApp", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
+                    }
 
-                        Button(
-                            onClick = onClick,
-                            modifier = Modifier.weight(1.2f).height(38.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("View Details", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
+                    OutlinedButton(
+                        onClick = onWhatsAppClick,
+                        modifier = Modifier.weight(1f).height(38.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFFEC4899)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEC4899)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Chat", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
+                    }
+
+                    Button(
+                        onClick = onClick,
+                        modifier = Modifier.weight(1.5f).height(38.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("View Details", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
                     }
                 }
             }
@@ -1393,15 +1419,20 @@ fun ListingCardItem(
                         }
                     }
                 } else {
+                    val localPhoto = remember(listing.ownerUid) {
+                        if (listing.ownerUid.isNotBlank()) LocalUserCache(context).getProfilePhoto(listing.ownerUid) else null
+                    }
+                    val shopImageToDisplay = listing.imageUrl.ifBlank { localPhoto ?: "" }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(180.dp)
                     ) {
-                        if (listing.imageUrl.isNotBlank()) {
-                            val coverPhotos = listing.imageUrl.split("~").filter { it.isNotBlank() }
+                        if (shopImageToDisplay.isNotBlank()) {
+                            val coverPhotos = shopImageToDisplay.split("~").filter { it.isNotBlank() }
                             ListingImage(
-                                imageUrl = coverPhotos.firstOrNull() ?: listing.imageUrl,
+                                imageUrl = coverPhotos.firstOrNull() ?: shopImageToDisplay,
                                 contentDescription = listing.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
@@ -1503,36 +1534,36 @@ fun ListingCardItem(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp)
+                            .padding(horizontal = 10.dp)
                             .padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Button(
                             onClick = onCallClick,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(42.dp),
-                            shape = RoundedCornerShape(12.dp),
+                                .height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Call", fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Call", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
 
                         Button(
                             onClick = onWhatsAppClick,
                             modifier = Modifier
-                                .weight(1.2f)
-                                .height(42.dp),
-                            shape = RoundedCornerShape(12.dp),
+                                .weight(1.3f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("WhatsApp", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Icon(Icons.Default.Smartphone, contentDescription = null, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("WhatsApp", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
 
                         Button(
@@ -1540,15 +1571,31 @@ fun ListingCardItem(
                                 MapLocationHelper.openMapDirections(context, listing.location)
                             },
                             modifier = Modifier
-                                .weight(1.3f)
-                                .height(42.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                                .weight(1.5f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0091EA)),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Get Directions", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Get Directions", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = onClick,
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            val detailBtnText = if (listing.category.contains("Restaurant", ignoreCase = true) || listing.category.contains("Food", ignoreCase = true)) "View Menu" else "View Details"
+                            val detailIcon = if (listing.category.contains("Restaurant", ignoreCase = true) || listing.category.contains("Food", ignoreCase = true)) Icons.Default.Restaurant else Icons.Default.Visibility
+                            Icon(detailIcon, contentDescription = null, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(detailBtnText, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
 

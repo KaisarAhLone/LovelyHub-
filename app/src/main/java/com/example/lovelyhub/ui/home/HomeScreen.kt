@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Work
@@ -57,6 +58,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -101,6 +104,7 @@ import com.example.lovelyhub.ui.auth.AuthViewModel
 import com.example.lovelyhub.ui.chats.ChatDetailScreen
 import com.example.lovelyhub.ui.chats.ChatListScreen
 import com.example.lovelyhub.ui.chats.ChatViewModel
+import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.listings.AddListingScreen
 import com.example.lovelyhub.ui.listings.ListingDetailScreen
 import com.example.lovelyhub.ui.listings.ListingListScreen
@@ -156,12 +160,21 @@ fun HomeScreen(
     var showAboutScreen by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
+    var showSellerDisclaimerDialog by remember { mutableStateOf(false) }
+    var isDisclaimerChecked by remember { mutableStateOf(false) }
     var activeChatTarget by remember { mutableStateOf<ActiveChatTarget?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
     val userProfile by viewModel.currentUserProfile.collectAsState()
     val currentUser = viewModel.currentUser
     val localUserCache = remember { LocalUserCache(context) }
+
+    LaunchedEffect(currentUser, userProfile) {
+        val uid = currentUser?.uid ?: ""
+        if (uid.isNotBlank() && !localUserCache.hasAcceptedDisclaimer(uid)) {
+            showSellerDisclaimerDialog = true
+        }
+    }
 
     val cachedLocalPhoto = remember(currentUser?.uid, userProfile?.photoUrl) {
         localUserCache.getProfilePhoto(currentUser?.uid ?: "")
@@ -622,9 +635,9 @@ fun MainHomeFeedContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.size(56.dp)) {
-                        if (userPhotoUrl != null) {
-                            AsyncImage(
-                                model = userPhotoUrl,
+                        if (!userPhotoUrl.isNullOrBlank()) {
+                            ListingImage(
+                                imageUrl = userPhotoUrl,
                                 contentDescription = "User Profile",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier

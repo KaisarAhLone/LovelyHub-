@@ -85,6 +85,8 @@ class ChatRepository(
                 "chatId" to chatId,
                 "participants" to listOf(senderUid, receiverUid),
                 "lastMessage" to preview,
+                "lastSenderUid" to senderUid,
+                "isRead" to false,
                 "timestamp" to System.currentTimeMillis()
             )
 
@@ -199,6 +201,10 @@ class ChatRepository(
                                 fetched
                             }
 
+                            val lastSenderUid = doc.getString("lastSenderUid") ?: ""
+                            val isRead = doc.getBoolean("isRead") ?: true
+                            val unread = if (lastSenderUid.isNotBlank() && lastSenderUid != currentUid && !isRead) 1 else 0
+
                             ChatConversation(
                                 chatId = chatId,
                                 otherUid = otherUid,
@@ -207,7 +213,7 @@ class ChatRepository(
                                 otherPhone = userInfo.phone,
                                 otherWhatsApp = userInfo.whatsApp,
                                 lastMessage = generateMessagePreview(lastMsg),
-                                unreadCount = 0,
+                                unreadCount = unread,
                                 timestamp = time
                             )
                         }
@@ -220,5 +226,14 @@ class ChatRepository(
             }
 
         awaitClose { listener.remove() }
+    }
+
+    fun markChatAsRead(receiverUid: String) {
+        val senderUid = auth.currentUser?.uid ?: return
+        if (receiverUid.isBlank()) return
+        val chatId = generateChatId(senderUid, receiverUid)
+        try {
+            firestore.collection("chats").document(chatId).update("isRead", true)
+        } catch (_: Exception) {}
     }
 }

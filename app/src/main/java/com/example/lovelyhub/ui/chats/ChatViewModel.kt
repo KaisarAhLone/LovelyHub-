@@ -51,6 +51,7 @@ class ChatViewModel(
 
     fun listenToMessages(context: Context, receiverUid: String) {
         repository.initLocalCache(context)
+        repository.markChatAsRead(receiverUid)
         messageJob?.cancel()
 
         val cachedMsg = repository.getCachedMessages(receiverUid)

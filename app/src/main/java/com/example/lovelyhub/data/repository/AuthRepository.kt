@@ -2,11 +2,13 @@ package com.example.lovelyhub.data.repository
 
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
+import com.example.lovelyhub.data.local.LocalUserCache
 import com.example.lovelyhub.data.model.Listing
 import com.example.lovelyhub.data.model.User
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -17,6 +19,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.io.File
 
 class AuthRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -59,6 +62,10 @@ class AuthRepository(
                 listingRepository.compressAndEncodeImage(context, imageUri)
             } else {
                 ""
+            }
+
+            if (encodedPhoto.isNotBlank()) {
+                LocalUserCache(context).saveProfilePhotoBase64(user.uid, encodedPhoto)
             }
 
             val finalWhatsApp = businessWhatsApp.ifBlank { businessPhone }
@@ -187,6 +194,10 @@ class AuthRepository(
                         return Result.failure(Exception("An account with email '${user.email}' already exists as '$existingRole'! Please use the Login tab to sign in."))
                     }
 
+                    if (encodedPhoto.isNotBlank()) {
+                        LocalUserCache(context).saveProfilePhotoBase64(user.uid, encodedPhoto)
+                    }
+
                     val newUser = User(
                         uid = user.uid,
                         name = finalName,
@@ -267,9 +278,25 @@ class AuthRepository(
         businessName: String,
         businessPhone: String,
         businessLocation: String,
-        photoUrl: String
+        photoUrl: String,
+        openTime: String = "09:00 AM",
+        closeTime: String = "10:00 PM",
+        is24Hours: Boolean = false
     ): Result<Unit> {
         return try {
+            val finalPhotoStr = if (photoUrl.startsWith("/") || photoUrl.startsWith("file:")) {
+                try {
+                    val file = File(photoUrl)
+                    if (file.exists()) {
+                        val bytes = file.readBytes()
+                        val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        "data:image/jpeg;base64,$b64"
+                    } else photoUrl
+                } catch (_: Exception) { photoUrl }
+            } else {
+                photoUrl
+            }
+
             val updates = mapOf(
                 "name" to name,
                 "email" to email,
@@ -277,7 +304,10 @@ class AuthRepository(
                 "businessName" to businessName,
                 "businessPhone" to businessPhone,
                 "businessLocation" to businessLocation,
-                "photoUrl" to photoUrl
+                "photoUrl" to finalPhotoStr,
+                "openTime" to (if (is24Hours) "Open 24 Hours" else openTime),
+                "closeTime" to (if (is24Hours) "Open 24 Hours" else closeTime),
+                "is24Hours" to is24Hours
             )
             firestore.collection("users").document(uid).update(updates).await()
 
@@ -289,24 +319,19 @@ class AuthRepository(
                     else -> "Marketplace"
                 }
 
-                val userDoc = firestore.collection("users").document(uid).get().await()
-                val is24 = userDoc.getBoolean("is24Hours") ?: false
-                val oTime = userDoc.getString("openTime") ?: "09:00 AM"
-                val cTime = userDoc.getString("closeTime") ?: "10:00 PM"
-
                 val shopUpdates = mutableMapOf<String, Any>(
                     "title" to businessName,
                     "phone" to businessPhone,
                     "location" to businessLocation,
                     "category" to category,
                     "isShop" to true,
-                    "is24Hours" to is24,
-                    "openTime" to (if (is24) "Open 24 Hours" else oTime),
-                    "closeTime" to (if (is24) "Open 24 Hours" else cTime),
-                    "price" to (if (is24) "Open 24 Hours" else "Open: $oTime - $cTime")
+                    "is24Hours" to is24Hours,
+                    "openTime" to (if (is24Hours) "Open 24 Hours" else openTime),
+                    "closeTime" to (if (is24Hours) "Open 24 Hours" else closeTime),
+                    "price" to (if (is24Hours) "Open 24 Hours" else "Open: $openTime - $closeTime")
                 )
-                if (photoUrl.isNotBlank()) {
-                    shopUpdates["imageUrl"] = photoUrl
+                if (finalPhotoStr.isNotBlank()) {
+                    shopUpdates["imageUrl"] = finalPhotoStr
                 }
 
                 try {
@@ -316,13 +341,13 @@ class AuthRepository(
                         id = uid,
                         category = category,
                         title = businessName,
-                        price = if (is24) "Open 24 Hours" else "Open: $oTime - $cTime",
+                        price = if (is24Hours) "Open 24 Hours" else "Open: $openTime - $closeTime",
                         phone = businessPhone,
                         location = businessLocation,
-                        imageUrl = photoUrl,
-                        openTime = if (is24) "Open 24 Hours" else oTime,
-                        closeTime = if (is24) "Open 24 Hours" else cTime,
-                        is24Hours = is24,
+                        imageUrl = finalPhotoStr,
+                        openTime = if (is24Hours) "Open 24 Hours" else openTime,
+                        closeTime = if (is24Hours) "Open 24 Hours" else closeTime,
+                        is24Hours = is24Hours,
                         ownerUid = uid,
                         status = "Open",
                         isShop = true
@@ -349,6 +374,37 @@ class AuthRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun deleteUserAccount(context: Context): Result<Unit> {
+        val user = auth.currentUser ?: run {
+            auth.signOut()
+            return Result.success(Unit)
+        }
+        val uid = user.uid
+
+        try {
+            firestore.collection("users").document(uid).delete().await()
+        } catch (_: Exception) {}
+
+        try {
+            firestore.collection("listings").document(uid).delete().await()
+        } catch (_: Exception) {}
+
+        try {
+            LocalUserCache(context).removeProfilePhoto(uid)
+            LocalUserCache(context).setAcceptedDisclaimer(false, uid)
+        } catch (_: Exception) {}
+
+        try {
+            user.delete().await()
+        } catch (_: Exception) {}
+
+        try {
+            auth.signOut()
+        } catch (_: Exception) {}
+
+        return Result.success(Unit)
     }
 
     fun signOut() {

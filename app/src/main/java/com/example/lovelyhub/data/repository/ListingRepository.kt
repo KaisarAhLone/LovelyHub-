@@ -126,10 +126,11 @@ class ListingRepository {
                 listing.category.equals("Rentals", ignoreCase = true)
 
         if (isBusinessCategory && uid.isNotBlank()) {
-            val dishEntry = if (encodedImage.isNotBlank()) {
-                "${listing.title} - ${listing.price}|$encodedImage"
+            val firstFormatted = listing.menuItems.firstOrNull() ?: "${listing.title} | ${listing.price}"
+            val dishEntry = if (encodedImage.isNotBlank() && !firstFormatted.contains(encodedImage)) {
+                "$firstFormatted | $encodedImage"
             } else {
-                "${listing.title} - ${listing.price}"
+                firstFormatted
             }
 
             try {
@@ -191,9 +192,15 @@ class ListingRepository {
                 "title" to updatedListing.title,
                 "price" to updatedListing.price,
                 "phone" to updatedListing.phone,
+                "whatsApp" to updatedListing.whatsApp,
+                "location" to updatedListing.location,
                 "category" to updatedListing.category,
                 "imageUrl" to updatedListing.imageUrl,
-                "status" to updatedListing.status
+                "status" to updatedListing.status,
+                "openTime" to updatedListing.openTime,
+                "closeTime" to updatedListing.closeTime,
+                "is24Hours" to updatedListing.is24Hours,
+                "menuItems" to updatedListing.menuItems
             )
 
             firestore.collection("listings").document(listing.id).update(updates).await()

@@ -53,6 +53,7 @@ import com.example.lovelyhub.ui.auth.AuthScreen
 import com.example.lovelyhub.ui.auth.AuthState
 import com.example.lovelyhub.ui.auth.AuthViewModel
 import com.example.lovelyhub.ui.home.HomeScreen
+import com.example.lovelyhub.ui.onboarding.OnboardingScreen
 import com.example.lovelyhub.ui.splash.SplashScreen
 import com.example.lovelyhub.ui.theme.LovelyHubTheme
 
@@ -77,6 +78,9 @@ class MainActivity : ComponentActivity() {
 fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
     val context = LocalContext.current
     var isSplashFinished by remember { mutableStateOf(false) }
+    var hasCompletedOnboarding by remember {
+        mutableStateOf(LocalUserCache(context).hasCompletedOnboarding())
+    }
     var hasAcceptedDisclaimer by remember {
         mutableStateOf(LocalUserCache(context).hasAcceptedDisclaimer())
     }
@@ -86,6 +90,13 @@ fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
         SplashScreen(
             onSplashFinished = {
                 isSplashFinished = true
+            }
+        )
+    } else if (!hasCompletedOnboarding) {
+        OnboardingScreen(
+            onFinishOnboarding = {
+                LocalUserCache(context).setCompletedOnboarding(true)
+                hasCompletedOnboarding = true
             }
         )
     } else if (!hasAcceptedDisclaimer) {

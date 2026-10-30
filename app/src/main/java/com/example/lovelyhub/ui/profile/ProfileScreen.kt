@@ -67,6 +67,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.lovelyhub.ui.components.ListingImage
+import com.example.lovelyhub.ui.onboarding.OnboardingScreen
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
@@ -174,6 +176,7 @@ fun ProfileScreen(
     var itemToEdit by remember { mutableStateOf<MyListingDisplayItem?>(null) }
     var isNotificationsEnabled by remember { mutableStateOf(true) }
     var listingToDelete by remember { mutableStateOf<Listing?>(null) }
+    var showOnboardingModal by remember { mutableStateOf(false) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()

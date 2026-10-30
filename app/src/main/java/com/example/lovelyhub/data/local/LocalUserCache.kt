@@ -116,4 +116,12 @@ class LocalUserCache(private val context: Context) {
         val targetUid = uid.ifBlank { getCurrentUid() }
         prefs.edit().putBoolean("accepted_disclaimer_$targetUid", accepted).commit()
     }
+
+    fun hasCompletedOnboarding(): Boolean {
+        return prefs.getBoolean("has_completed_onboarding_v5", false)
+    }
+
+    fun setCompletedOnboarding(completed: Boolean) {
+        prefs.edit().putBoolean("has_completed_onboarding_v5", completed).commit()
+    }
 }

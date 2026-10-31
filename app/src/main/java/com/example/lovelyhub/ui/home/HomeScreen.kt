@@ -192,14 +192,36 @@ fun HomeScreen(
         }
     }
 
-    BackHandler(enabled = activeChatTarget != null || showAboutScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+    fun isServiceSubCategory(catName: String): Boolean {
+        val serviceTitles = listOf(
+            "Laundry Services", "Room Cleaning", "Electrician", "Plumber",
+            "Laptop & Mobile Repair", "AC & Appliance Repair", "Salon & Grooming",
+            "Bike & Cycle Repair", "Home Tuition", "Shifting & Packing",
+            "Photography", "Water Can Delivery", "Local Delivery",
+            "Car Wash & Repair", "Wi-Fi & Internet Setup"
+        )
+        return serviceTitles.any { catName.contains(it, ignoreCase = true) || it.contains(catName, ignoreCase = true) }
+    }
+
+    fun navigateBackOneStep() {
         when {
             activeChatTarget != null -> activeChatTarget = null
             showAboutScreen -> showAboutScreen = false
             selectedListingDetail != null -> selectedListingDetail = null
-            selectedCategory != null -> selectedCategory = null
+            selectedCategory != null -> {
+                val cat = selectedCategory!!
+                if (cat != "Services" && isServiceSubCategory(cat)) {
+                    selectedCategory = "Services"
+                } else {
+                    selectedCategory = null
+                }
+            }
             selectedBottomNavIndex != 0 -> selectedBottomNavIndex = 0
         }
+    }
+
+    BackHandler(enabled = activeChatTarget != null || showAboutScreen || selectedListingDetail != null || selectedCategory != null || selectedBottomNavIndex != 0) {
+        navigateBackOneStep()
     }
 
     val categories = remember {
@@ -451,7 +473,7 @@ fun HomeScreen(
                         ListingListScreen(
                             category = selectedCategory!!,
                             viewModel = listingViewModel,
-                            onBackClick = { selectedCategory = null },
+                            onBackClick = { navigateBackOneStep() },
                             onListingClick = { listing ->
                                 if (!listing.category.contains("Services", ignoreCase = true)) {
                                     selectedListingDetail = listing
@@ -460,6 +482,9 @@ fun HomeScreen(
                             onAddListingClick = {
                                 selectedCategory = null
                                 selectedBottomNavIndex = 1
+                            },
+                            onMessageClick = { receiverUid, receiverName, receiverPhotoUrl ->
+                                activeChatTarget = ActiveChatTarget(receiverUid, receiverName, receiverPhotoUrl)
                             }
                         )
                     }

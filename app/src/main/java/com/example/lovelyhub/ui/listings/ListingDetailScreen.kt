@@ -807,16 +807,23 @@ fun ListingDetailScreen(
                                     val parts = rawItem.split("|").map { it.trim() }
                                     val name = parts.getOrNull(0) ?: "Vehicle"
                                     val type = parts.getOrNull(1) ?: "Car"
-                                    val seats = parts.getOrNull(2) ?: "5 Seats"
+                                    val defaultSeats = if (type.contains("Bike", true) || type.contains("Scooty", true)) "2 Seats" else "5 Seats"
+                                    val rawSeats = parts.getOrNull(2) ?: ""
+                                    val seats = if (rawSeats.isNotBlank()) rawSeats else defaultSeats
                                     val fuel = parts.getOrNull(3) ?: "Petrol"
-                                    val trans = parts.getOrNull(4) ?: "Manual"
+                                    val rawMileage = parts.getOrNull(4) ?: ""
+                                    val mileageVal = if (rawMileage.isNotBlank() && !rawMileage.equals("Manual", true) && !rawMileage.equals("Automatic", true)) {
+                                        if (rawMileage.contains("km")) rawMileage else "$rawMileage km/l"
+                                    } else {
+                                        if (type.contains("Bike", true) || type.contains("Scooty", true)) "45 km/l" else "18 km/l"
+                                    }
                                     val bags = parts.getOrNull(5) ?: "2 Bags"
                                     val r1 = parts.getOrNull(6) ?: "₹150"
                                     val r3 = parts.getOrNull(7) ?: "₹800"
                                     val r6 = parts.getOrNull(8) ?: "₹1,200"
                                     val rDay = parts.getOrNull(9) ?: "₹2,000"
                                     val photo = parts.getOrNull(10) ?: galleryPhotos.firstOrNull() ?: ""
-                                    RentalCarItem(name, type, seats, fuel, trans, bags, r1, r3, r6, rDay, photo)
+                                    RentalCarItem(name, type, seats, fuel, mileageVal, bags, r1, r3, r6, rDay, photo)
                                 }
                             } else {
                                 emptyList()
@@ -957,7 +964,7 @@ fun ListingDetailScreen(
                                                             Text("|", fontSize = 11.sp, color = Color.LightGray)
                                                             Text("⛽ ${car.fuelType}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
                                                             Text("|", fontSize = 11.sp, color = Color.LightGray)
-                                                            Text("⚙️ ${car.transmission}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
+                                                            Text("⚡ ${car.transmission}", fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }

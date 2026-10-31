@@ -1326,6 +1326,8 @@ fun ProfileScreen(
         val currentDisplay = itemToEdit!!
         var editTitle by remember(currentDisplay) { mutableStateOf(currentDisplay.title) }
         var editPrice by remember(currentDisplay) { mutableStateOf(currentDisplay.price) }
+        var editPhone by remember(currentDisplay) { mutableStateOf(currentDisplay.rawListing.phone) }
+        var editWhatsApp by remember(currentDisplay) { mutableStateOf(currentDisplay.rawListing.whatsApp.ifBlank { currentDisplay.rawListing.phone }) }
         var editImageUri by remember(currentDisplay) { mutableStateOf<Uri?>(null) }
         var editImageUrl by remember(currentDisplay) { mutableStateOf(currentDisplay.imageUrl) }
         var isSavingEdit by remember { mutableStateOf(false) }
@@ -1403,7 +1405,35 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = editPrice,
                         onValueChange = { editPrice = it },
-                        label = { Text("Price / Rate (e.g. ₹180)") },
+                        label = { Text("Price / Rate / Salary") },
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = { Text("Contact Phone Number") },
+                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = LovelyPurplePrimary) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = editWhatsApp,
+                        onValueChange = { editWhatsApp = it },
+                        label = { Text("WhatsApp Number") },
+                        leadingIcon = { Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color(0xFF2E7D32)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
                         colors = fieldColors,
                         modifier = Modifier.fillMaxWidth(),
@@ -1435,7 +1465,11 @@ fun ProfileScreen(
                                 if (currentDisplay.menuItemIndex in updatedList.indices) {
                                     val formattedSubItem = "$editTitle | $cleanPriceStr | $newEncodedImg"
                                     updatedList[currentDisplay.menuItemIndex] = formattedSubItem
-                                    val updatedListing = raw.copy(menuItems = updatedList)
+                                    val updatedListing = raw.copy(
+                                        phone = editPhone,
+                                        whatsApp = editWhatsApp,
+                                        menuItems = updatedList
+                                    )
                                     listingViewModel.updateListing(context, updatedListing, newImageUri = null) { error ->
                                         isSavingEdit = false
                                         itemToEdit = null
@@ -1451,6 +1485,8 @@ fun ProfileScreen(
                                 val updatedListing = raw.copy(
                                     title = editTitle,
                                     price = cleanPriceStr,
+                                    phone = editPhone,
+                                    whatsApp = editWhatsApp,
                                     imageUrl = if (newEncodedImg.isNotBlank()) newEncodedImg else raw.imageUrl
                                 )
                                 listingViewModel.updateListing(context, updatedListing, newImageUri = editImageUri) { error ->

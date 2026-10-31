@@ -150,6 +150,7 @@ fun AddListingScreen(
     var transmission by remember { mutableStateOf("Automatic") }
     var isTransmissionDropdownExpanded by remember { mutableStateOf(false) }
     var seatingCapacity by remember { mutableStateOf("5 Seats") }
+    var isSeatingDropdownExpanded by remember { mutableStateOf(false) }
     var luggageCapacity by remember { mutableStateOf("2 Bags") }
     var airbagOption by remember { mutableStateOf("2 Airbags") }
 
@@ -160,6 +161,7 @@ fun AddListingScreen(
 
     val bodyTypeOptions = listOf("Car", "Bike", "Scooty")
     val fuelTypeOptions = listOf("Petrol", "Diesel", "Electric (EV)")
+    val seatingOptions = listOf("2 Seats", "4 Seats", "5 Seats", "7 Seats")
     val transmissionOptions = listOf("Automatic", "Manual")
 
     var jobType by remember { mutableStateOf("Part-time") }
@@ -904,6 +906,13 @@ fun AddListingScreen(
                                                             onClick = {
                                                                 vehicleBodyType = opt
                                                                 isBodyTypeDropdownExpanded = false
+                                                                if (opt == "Bike" || opt == "Scooty") {
+                                                                    seatingCapacity = "2 Seats"
+                                                                    if (mileage.isBlank()) mileage = "45 km/l"
+                                                                } else {
+                                                                    seatingCapacity = "5 Seats"
+                                                                    if (mileage.isBlank()) mileage = "18 km/l"
+                                                                }
                                                             }
                                                         )
                                                     }
@@ -916,6 +925,38 @@ fun AddListingScreen(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                                             ) {
+                                                Box(modifier = Modifier.weight(1f)) {
+                                                    OutlinedTextField(
+                                                        value = seatingCapacity,
+                                                        onValueChange = {},
+                                                        readOnly = true,
+                                                        label = { Text("Seating Capacity") },
+                                                        trailingIcon = {
+                                                            IconButton(onClick = { isSeatingDropdownExpanded = true }) {
+                                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFFEC4899))
+                                                            }
+                                                        },
+                                                        colors = fieldColors,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    )
+
+                                                    DropdownMenu(
+                                                        expanded = isSeatingDropdownExpanded,
+                                                        onDismissRequest = { isSeatingDropdownExpanded = false }
+                                                    ) {
+                                                        seatingOptions.forEach { opt ->
+                                                            DropdownMenuItem(
+                                                                text = { Text(opt, fontWeight = FontWeight.Medium) },
+                                                                onClick = {
+                                                                    seatingCapacity = opt
+                                                                    isSeatingDropdownExpanded = false
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
                                                 Box(modifier = Modifier.weight(1f)) {
                                                     OutlinedTextField(
                                                         value = fuelType,
@@ -942,38 +983,6 @@ fun AddListingScreen(
                                                                 onClick = {
                                                                     fuelType = opt
                                                                     isFuelDropdownExpanded = false
-                                                                }
-                                                            )
-                                                        }
-                                                    }
-                                                }
-
-                                                Box(modifier = Modifier.weight(1f)) {
-                                                    OutlinedTextField(
-                                                        value = transmission,
-                                                        onValueChange = {},
-                                                        readOnly = true,
-                                                        label = { Text("Transmission") },
-                                                        trailingIcon = {
-                                                            IconButton(onClick = { isTransmissionDropdownExpanded = true }) {
-                                                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFFEC4899))
-                                                            }
-                                                        },
-                                                        colors = fieldColors,
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    )
-
-                                                    DropdownMenu(
-                                                        expanded = isTransmissionDropdownExpanded,
-                                                        onDismissRequest = { isTransmissionDropdownExpanded = false }
-                                                    ) {
-                                                        transmissionOptions.forEach { opt ->
-                                                            DropdownMenuItem(
-                                                                text = { Text(opt, fontWeight = FontWeight.Medium) },
-                                                                onClick = {
-                                                                    transmission = opt
-                                                                    isTransmissionDropdownExpanded = false
                                                                 }
                                                             )
                                                         }
@@ -1275,7 +1284,10 @@ fun AddListingScreen(
                                                 "$itemName | $cleanPrice | $extraNotes"
                                             }
                                             "Rooms" -> if (finalFacilitiesString.isNotBlank()) "$finalItemTitle - $finalPrice|$finalCombinedImages|$finalFacilitiesString" else ""
-                                            "Rentals" -> "$itemName | $vehicleBodyType | $seatingCapacity | $fuelType | $transmission | $luggageCapacity | ${if (rate1hr.startsWith("₹")) rate1hr else "₹$rate1hr"} | ${if (rate3hr.startsWith("₹")) rate3hr else "₹$rate3hr"} | ${if (rate6hr.startsWith("₹")) rate6hr else "₹$rate6hr"} | ${if (rateDay.startsWith("₹")) rateDay else "₹$rateDay"} | $finalCombinedImages"
+                                            "Rentals" -> {
+                                                val mileageDisplay = if (mileage.isNotBlank()) (if (mileage.contains("km")) mileage else "$mileage km/l") else (if (vehicleBodyType == "Bike" || vehicleBodyType == "Scooty") "45 km/l" else "18 km/l")
+                                                "$itemName | $vehicleBodyType | $seatingCapacity | $fuelType | $mileageDisplay | $luggageCapacity | ${if (rate1hr.startsWith("₹")) rate1hr else "₹$rate1hr"} | ${if (rate3hr.startsWith("₹")) rate3hr else "₹$rate3hr"} | ${if (rate6hr.startsWith("₹")) rate6hr else "₹$rate6hr"} | ${if (rateDay.startsWith("₹")) rateDay else "₹$rateDay"} | $finalCombinedImages"
+                                            }
                                             "Jobs" -> "$jobDesc|$workHours"
                                             else -> ""
                                         }

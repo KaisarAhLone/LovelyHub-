@@ -133,7 +133,8 @@ fun ListingListScreen(
     viewModel: ListingViewModel,
     onBackClick: () -> Unit,
     onListingClick: (Listing) -> Unit,
-    onAddListingClick: () -> Unit
+    onAddListingClick: () -> Unit,
+    onMessageClick: (receiverUid: String, receiverName: String, receiverPhotoUrl: String) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
     val listingState by viewModel.listingState.collectAsState()
@@ -207,19 +208,35 @@ fun ListingListScreen(
         viewModel.fetchListings(category)
     }
 
-    fun openWhatsApp(targetNum: String, serviceTitle: String) {
+    fun openWhatsApp(targetNum: String, listingTitle: String, categoryName: String = category) {
         val cleanNum = targetNum.replace(Regex("[^0-9]"), "")
         val fullNum = if (!cleanNum.startsWith("91") && cleanNum.length == 10) "91$cleanNum" else cleanNum
 
-        val msg = "Hello! I found your $serviceTitle on LovelyHub. I would like to inquire about your item/service."
+        val msg = when {
+            categoryName.contains("Job", ignoreCase = true) ->
+                "Hello! I am interested in applying for $listingTitle on LovelyHub."
+            categoryName.contains("Rental", ignoreCase = true) ->
+                "Hello! I am interested in renting $listingTitle on LovelyHub."
+            categoryName.contains("Service", ignoreCase = true) ->
+                "Hello! I am interested in booking $listingTitle on LovelyHub."
+            categoryName.contains("Room", ignoreCase = true) ->
+                "Hello! I am interested in inquiring about $listingTitle on LovelyHub."
+            categoryName.contains("Marketplace", ignoreCase = true) ->
+                "Hello! I am interested in buying $listingTitle on LovelyHub."
+            categoryName.contains("Restaurant", ignoreCase = true) || categoryName.contains("Food", ignoreCase = true) ->
+                "Hello! I want to inquire/order from $listingTitle on LovelyHub."
+            else ->
+                "Hello! I am interested in $listingTitle on LovelyHub."
+        }
+
         val encodedMsg = Uri.encode(msg)
 
-        val waUri = Uri.parse("https:" + "/" + "/api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
+        val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
         val intent = Intent(Intent.ACTION_VIEW, waUri)
         try {
             context.startActivity(intent)
         } catch (_: Exception) {
-            val fallbackUri = Uri.parse("https:" + "/" + "/wa.me/$fullNum?text=$encodedMsg")
+            val fallbackUri = Uri.parse("https://wa.me/$fullNum?text=$encodedMsg")
             val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
             try { context.startActivity(fallbackIntent) } catch (_: Exception) {}
         }
@@ -600,7 +617,7 @@ fun ListingListScreen(
                                                                 onClick = {
                                                                     val num = provider.whatsApp.ifBlank { provider.phone }
                                                                     if (num.isNotBlank()) {
-                                                                        openWhatsApp(num, selectedServiceFilter!!)
+                                                                        openWhatsApp(num, selectedServiceFilter!!, "Services")
                                                                     }
                                                                 },
                                                                 modifier = Modifier
@@ -792,7 +809,12 @@ fun ListingListScreen(
                                                     onWhatsAppClick = {
                                                         val num = listing.whatsApp.ifBlank { listing.phone }
                                                         if (num.isNotBlank()) {
-                                                            openWhatsApp(num, listing.title)
+                                                            openWhatsApp(num, listing.title, listing.category)
+                                                        }
+                                                    },
+                                                    onChatClick = {
+                                                        if (listing.ownerUid.isNotBlank()) {
+                                                            onMessageClick(listing.ownerUid, listing.title, listing.imageUrl)
                                                         }
                                                     },
                                                     onFavoriteToggle = {
@@ -998,6 +1020,7 @@ fun ListingCardItem(
     onClick: () -> Unit,
     onCallClick: () -> Unit,
     onWhatsAppClick: () -> Unit = {},
+    onChatClick: () -> Unit = {},
     onFavoriteToggle: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -1181,7 +1204,7 @@ fun ListingCardItem(
                     }
 
                     OutlinedButton(
-                        onClick = onWhatsAppClick,
+                        onClick = onChatClick,
                         modifier = Modifier.weight(1f).height(38.dp),
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.2.dp, Color(0xFFEC4899)),

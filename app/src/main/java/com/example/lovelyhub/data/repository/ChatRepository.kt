@@ -2,6 +2,7 @@ package com.example.lovelyhub.data.repository
 
 import android.content.Context
 import com.example.lovelyhub.data.local.LocalChatCache
+import com.example.lovelyhub.data.local.LocalUserCache
 import com.example.lovelyhub.data.model.ChatConversation
 import com.example.lovelyhub.data.model.ChatMessage
 import com.google.firebase.auth.FirebaseAuth
@@ -27,9 +28,11 @@ class ChatRepository(
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
     private val userCache = ConcurrentHashMap<String, CachedUserInfo>()
     private var localCache: LocalChatCache? = null
+    private var appContext: Context? = null
 
     fun initLocalCache(context: Context) {
-        if (localCache == null) {
+        if (appContext == null) {
+            appContext = context.applicationContext
             localCache = LocalChatCache(context.applicationContext)
         }
     }
@@ -179,23 +182,43 @@ class ChatRepository(
                             if (otherUid.isBlank()) return@async null
 
                             val cachedUser = userCache[otherUid]
-                            val userInfo = if (cachedUser != null) {
+                            val userInfo = if (cachedUser != null && cachedUser.photoUrl.isNotBlank()) {
                                 cachedUser
                             } else {
-                                val fetched = withTimeoutOrNull(2000L) {
+                                val fetched = withTimeoutOrNull(3000L) {
                                     try {
                                         val userDoc = firestore.collection("users").document(otherUid).get().await()
-                                        val name = userDoc.getString("businessName").takeIf { !it.isNullOrBlank() }
+                                        var name = userDoc.getString("businessName").takeIf { !it.isNullOrBlank() }
                                             ?: userDoc.getString("name")
                                             ?: "Campus User"
-                                        val photo = userDoc.getString("photoUrl") ?: ""
+                                        var photo = userDoc.getString("photoUrl") ?: ""
                                         val phone = userDoc.getString("businessPhone").takeIf { !it.isNullOrBlank() } ?: ""
                                         val whatsApp = userDoc.getString("businessWhatsApp").takeIf { !it.isNullOrBlank() } ?: phone
+
+                                        if (photo.isBlank()) {
+                                            try {
+                                                val listingDoc = firestore.collection("listings").document(otherUid).get().await()
+                                                if (listingDoc.exists()) {
+                                                    photo = listingDoc.getString("imageUrl") ?: ""
+                                                    if (name == "Campus User") {
+                                                        name = listingDoc.getString("title").takeIf { !it.isNullOrBlank() } ?: "Campus User"
+                                                    }
+                                                }
+                                            } catch (_: Exception) {}
+                                        }
+
+                                        if (photo.isNotBlank() && appContext != null) {
+                                            LocalUserCache(appContext!!).saveProfilePhotoBase64(otherUid, photo)
+                                        }
+
                                         CachedUserInfo(name, photo, phone, whatsApp)
                                     } catch (_: Exception) {
                                         null
                                     }
-                                } ?: CachedUserInfo("Campus User", "", "", "")
+                                } ?: run {
+                                    val localPhoto = appContext?.let { LocalUserCache(it).getProfilePhoto(otherUid) } ?: ""
+                                    CachedUserInfo("Campus User", localPhoto, "", "")
+                                }
 
                                 userCache[otherUid] = fetched
                                 fetched

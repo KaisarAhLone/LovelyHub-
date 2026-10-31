@@ -1,8 +1,12 @@
-package com.example.lovelyhub.ui.listings
+﻿package com.example.lovelyhub.ui.listings
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.lovelyhub.data.local.LocalUserCache
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -126,6 +130,87 @@ data class ServiceCategoryItem(
     val iconColor: Color
 )
 
+data class ShopTimingStatus(
+    val isOpen: Boolean,
+    val statusText: String,
+    val openTimeStr: String,
+    val closeTimeStr: String
+)
+
+fun calculateShopTimingStatus(openTimeRaw: String, closeTimeRaw: String, is24Hours: Boolean): ShopTimingStatus {
+    if (is24Hours || openTimeRaw.contains("24 Hours", ignoreCase = true) || closeTimeRaw.contains("24 Hours", ignoreCase = true)) {
+        return ShopTimingStatus(
+            isOpen = true,
+            statusText = "Open 24 Hours",
+            openTimeStr = "24 Hours",
+            closeTimeStr = "24 Hours"
+        )
+    }
+
+    val formattedOpenTime = openTimeRaw.ifBlank { "09:00 AM" }
+    val formattedCloseTime = closeTimeRaw.ifBlank { "10:00 PM" }
+
+    try {
+        val now = Calendar.getInstance()
+        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+
+        val sdf = SimpleDateFormat("hh:mm a", Locale.US)
+
+        fun parseTimeToMinutes(raw: String): Int? {
+            val cleaned = raw.trim().uppercase(Locale.US)
+            return try {
+                val date = sdf.parse(cleaned)
+                if (date != null) {
+                    val cal = Calendar.getInstance().apply { time = date }
+                    cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+                } else null
+            } catch (_: Exception) {
+                try {
+                    val isPm = cleaned.contains("PM")
+                    val digits = cleaned.replace(Regex("[^0-9:]"), "")
+                    val parts = digits.split(":")
+                    var hr = parts.getOrNull(0)?.toIntOrNull() ?: 9
+                    val min = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                    if (isPm && hr < 12) hr += 12
+                    if (!isPm && hr == 12) hr = 0
+                    hr * 60 + min
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
+
+        val openMinutes = parseTimeToMinutes(formattedOpenTime) ?: (9 * 60)
+        val closeMinutes = parseTimeToMinutes(formattedCloseTime) ?: (22 * 60)
+
+        val isOpen = if (openMinutes <= closeMinutes) {
+            currentMinutes in openMinutes..closeMinutes
+        } else {
+            currentMinutes >= openMinutes || currentMinutes <= closeMinutes
+        }
+
+        val text = if (isOpen) {
+            "Open now • Closes at $formattedCloseTime"
+        } else {
+            "Closed now • Opens at $formattedOpenTime"
+        }
+
+        return ShopTimingStatus(
+            isOpen = isOpen,
+            statusText = text,
+            openTimeStr = formattedOpenTime,
+            closeTimeStr = formattedCloseTime
+        )
+    } catch (_: Exception) {
+        return ShopTimingStatus(
+            isOpen = true,
+            statusText = "Open: $formattedOpenTime - $formattedCloseTime",
+            openTimeStr = formattedOpenTime,
+            closeTimeStr = formattedCloseTime
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListingListScreen(
@@ -231,6 +316,7 @@ fun ListingListScreen(
 
         val encodedMsg = Uri.encode(msg)
 
+        com.example.lovelyhub.data.repository.CommunicationEventRepository.recordWhatsAppMessageHandoff(listingTitle = listingTitle, listingType = categoryName, recipientName = listingTitle)
         val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$fullNum&text=$encodedMsg")
         val intent = Intent(Intent.ACTION_VIEW, waUri)
         try {
@@ -1446,6 +1532,7 @@ fun ListingCardItem(
                         if (listing.ownerUid.isNotBlank()) LocalUserCache(context).getProfilePhoto(listing.ownerUid) else null
                     }
                     val shopImageToDisplay = listing.imageUrl.ifBlank { localPhoto ?: "" }
+                    val shopTiming = calculateShopTimingStatus(listing.openTime, listing.closeTime, listing.is24Hours)
 
                     Box(
                         modifier = Modifier
@@ -1480,6 +1567,30 @@ fun ListingCardItem(
                                     contentDescription = null,
                                     tint = Color(0xFFEC4899),
                                     modifier = Modifier.size(52.dp)
+                                )
+                            }
+                        }
+
+                        if (!shopTiming.isOpen && !isJob && !isMarketplace) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.38f))
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(10.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFDC2626))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "CLOSED",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold
                                 )
                             }
                         }
@@ -1558,7 +1669,8 @@ fun ListingCardItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = 12.dp)
+                            .graphicsLayer { alpha = if (shopTiming.isOpen || isJob || isMarketplace) 1f else 0.55f },
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Button(
@@ -1624,20 +1736,23 @@ fun ListingCardItem(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
+                    val isClosed = !shopTiming.isOpen && !isJob && !isMarketplace
+                    val bottomBarBg = if (isClosed) Color(0xFFFFEBEE) else Color(0xFFFCE4EC)
+                    val bottomBarTint = if (isClosed) Color(0xFFDC2626) else Color(0xFFEC4899)
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFFCE4EC))
+                            .background(bottomBarBg)
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFFEC4899), modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.AccessTime, contentDescription = null, tint = bottomBarTint, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            val is24Service = listing.is24Hours || listing.price.contains("24 Hours", ignoreCase = true) || listing.openTime.contains("24 Hours", ignoreCase = true) || listing.price.contains("24/7", ignoreCase = true)
                             Text(
-                                text = if (is24Service) "Open 24 Hours • Free Service" else "Open: ${listing.openTime} - ${listing.closeTime}",
-                                color = Color(0xFF1E1E2D),
+                                text = shopTiming.statusText,
+                                color = bottomBarTint,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )

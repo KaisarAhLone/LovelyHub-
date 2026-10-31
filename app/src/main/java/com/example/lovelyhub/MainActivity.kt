@@ -49,6 +49,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lovelyhub.data.local.LocalUserCache
+import com.example.lovelyhub.ui.admin.AdminViewModel
+import com.example.lovelyhub.ui.admin.AdminAuthState
+import com.example.lovelyhub.ui.admin.AdminAuthScreen
+import com.example.lovelyhub.ui.admin.AdminDashboardScreen
 import com.example.lovelyhub.ui.auth.AuthScreen
 import com.example.lovelyhub.ui.auth.AuthState
 import com.example.lovelyhub.ui.auth.AuthViewModel
@@ -75,7 +79,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
+fun LovelyHubApp(
+    authViewModel: AuthViewModel = viewModel(),
+    adminViewModel: AdminViewModel = viewModel()
+) {
     val context = LocalContext.current
     var isSplashFinished by remember { mutableStateOf(false) }
     var hasCompletedOnboarding by remember {
@@ -84,7 +91,9 @@ fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
     var hasAcceptedDisclaimer by remember {
         mutableStateOf(LocalUserCache(context).hasAcceptedDisclaimer())
     }
+    var isOwnerPortalOpen by remember { mutableStateOf(false) }
     val authState by authViewModel.authState.collectAsState()
+    val adminAuthState by adminViewModel.authState.collectAsState()
 
     if (!isSplashFinished) {
         SplashScreen(
@@ -106,6 +115,26 @@ fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
                 hasAcceptedDisclaimer = true
             }
         )
+    } else if (isOwnerPortalOpen) {
+        if (adminAuthState is AdminAuthState.Authenticated) {
+            AdminDashboardScreen(
+                viewModel = adminViewModel,
+                onLogout = {
+                    adminViewModel.logout()
+                    isOwnerPortalOpen = false
+                }
+            )
+        } else {
+            AdminAuthScreen(
+                viewModel = adminViewModel,
+                onBackClick = {
+                    adminViewModel.logout() // Always clear session on back
+                    isOwnerPortalOpen = false
+                },
+                onAuthenticated = {
+                }
+            )
+        }
     } else {
         if (authState is AuthState.Success) {
             HomeScreen(
@@ -118,6 +147,9 @@ fun LovelyHubApp(authViewModel: AuthViewModel = viewModel()) {
             AuthScreen(
                 viewModel = authViewModel,
                 onAuthSuccess = {
+                },
+                onOpenOwnerPortal = {
+                    isOwnerPortalOpen = true
                 }
             )
         }

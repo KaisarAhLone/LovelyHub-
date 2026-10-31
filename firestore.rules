@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.owner == true
+      );
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // 2. Listings collection (Strict Approval & Active Visibility)
+    match /listings/{listingId} {
+      // Public users can only read approved & active listings. Admins & listing creators can read all.
+      allow read: if (
+        (resource.data.isActive == true && (
+          !('approvalStatus' in resource.data) ||
+          resource.data.approvalStatus == 'approved'
+        )) ||
+        isAdmin() ||
+        (isAuthenticated() && resource.data.ownerUid == request.auth.uid)
+      );
+
+      // Creating a new listing is permitted for authenticated users
+      allow create: if isAuthenticated() && (
+        isAdmin() || (
+          request.resource.data.ownerUid == request.auth.uid
+        )
+      );
+
+      // Updating a listing: Regular owners CANNOT approve their own listings
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.approvalStatus == resource.data.approvalStatus &&
+        request.resource.data.isActive == resource.data.isActive
+      );
+
+      // Deleting a listing: Only admin can delete (owners deactivate/soft-delete)
+      allow delete: if isAdmin();
+    }
+
+    // 3. Communication Events (Metadata only, privacy-protected)
+    match /communicationEvents/{eventId} {
+      // Any authenticated user can log their own initiated communication events
+      allow create: if isAuthenticated() && (
+        request.resource.data.actorUserId == request.auth.uid ||
+        request.resource.data.actorUserId == 'anonymous_user'
+      );
+
+      // Only administrators can read communication activity dashboards
+      allow read: if isAdmin();
+
+      // No client can alter or delete logged communication events
+      allow update, delete: if false;
+    }
+
+    // 4. Admin Audit Logs (Tamper-proof audit trail)
+    match /adminAuditLogs/{logId} {
+      // Only authenticated admins can append audit logs
+      allow create: if isAdmin();
+
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+
+      // Logs are immutable: no modifications or deletions
+      allow update, delete: if false;
+    }
+
+    // 5. Admin Settings (Auto-Approval Policy Configuration)
+    match /adminSettings/{settingId} {
+      // Anyone can read system settings so clients know if auto-approval is active
+      allow read: if true;
+      // Only administrators can change system configuration
+      allow write: if isAdmin();
+    }
+
+    // 6. Chats and Messages
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+  }
+}

@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.lovelyhub.data.local.LocalUserCache
 import com.example.lovelyhub.data.model.ChatConversation
 import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.theme.LovelyDarkPinkBg
@@ -149,6 +151,10 @@ fun ChatListScreen(
                                 }
 
                                 val isUnread = conv.unreadCount > 0
+                                val localPhoto = remember(conv.otherUid) {
+                                    if (conv.otherUid.isNotBlank()) LocalUserCache(context).getProfilePhoto(conv.otherUid) else null
+                                }
+                                val photoToDisplay = conv.otherPhotoUrl.ifBlank { localPhoto ?: "" }
 
                                 Card(
                                     modifier = Modifier
@@ -166,9 +172,9 @@ fun ChatListScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(modifier = Modifier.size(52.dp)) {
-                                            if (conv.otherPhotoUrl.isNotBlank()) {
+                                            if (photoToDisplay.isNotBlank()) {
                                                 ListingImage(
-                                                    imageUrl = conv.otherPhotoUrl,
+                                                    imageUrl = photoToDisplay,
                                                     contentDescription = conv.otherName,
                                                     contentScale = ContentScale.Crop,
                                                     modifier = Modifier

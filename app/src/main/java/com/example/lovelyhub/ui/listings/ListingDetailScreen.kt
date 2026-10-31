@@ -1,4 +1,4 @@
-package com.example.lovelyhub.ui.listings
+﻿package com.example.lovelyhub.ui.listings
 
 import android.Manifest
 import android.content.Intent
@@ -591,7 +591,8 @@ fun ListingDetailScreen(
                                 Button(
                                     onClick = {
                                         if (listing.phone.isNotBlank()) {
-                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                            com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                             try { context.startActivity(intent) } catch (_: Exception) {}
                                         }
                                     },
@@ -745,7 +746,8 @@ fun ListingDetailScreen(
                                             Button(
                                                 onClick = {
                                                     if (listing.phone.isNotBlank()) {
-                                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                        com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                         try { context.startActivity(intent) } catch (_: Exception) {}
                                                     }
                                                 },
@@ -1042,7 +1044,8 @@ fun ListingDetailScreen(
                                                     OutlinedButton(
                                                         onClick = {
                                                             if (listing.phone.isNotBlank()) {
-                                                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                                com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                                 try { context.startActivity(intent) } catch (_: Exception) {}
                                                             }
                                                         },
@@ -1398,7 +1401,8 @@ fun ListingDetailScreen(
                                             Button(
                                                 onClick = {
                                                     if (listing.phone.isNotBlank()) {
-                                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                        com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                         try { context.startActivity(intent) } catch (_: Exception) {}
                                                     }
                                                 },
@@ -1571,7 +1575,8 @@ fun ListingDetailScreen(
                                         Button(
                                             onClick = {
                                                 if (listing.phone.isNotBlank()) {
-                                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                    com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 }
                                             },
@@ -2103,7 +2108,8 @@ fun ListingDetailScreen(
                                 Button(
                                     onClick = {
                                         if (listing.phone.isNotBlank()) {
-                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                            com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                             try { context.startActivity(intent) } catch (_: Exception) {}
                                         }
                                     },
@@ -2277,7 +2283,8 @@ fun ListingDetailScreen(
                                         Button(
                                             onClick = {
                                                 if (listing.phone.isNotBlank()) {
-                                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
+                                                    com.example.lovelyhub.data.repository.CommunicationEventRepository.recordPhoneCallInitiated(listingId = listing.id, listingTitle = listing.title, listingType = listing.category, recipientName = listing.ownerName.ifBlank { listing.title })
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${listing.phone}"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 }
                                             },

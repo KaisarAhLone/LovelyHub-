@@ -6,6 +6,14 @@
         <entry key="Firebase Crashlytics">
           <value>
             <InsightsFilterSettings>
+              <option name="connection">
+                <ConnectionSetting>
+                  <option name="appId" value="com.kaisarlone.lovelyhub" />
+                  <option name="mobileSdkAppId" value="1:157913248379:android:8571cf227792240dd328de" />
+                  <option name="projectId" value="lovelyhub-18e18" />
+                  <option name="projectNumber" value="157913248379" />
+                </ConnectionSetting>
+              </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="THIRTY_DAYS" />
               <option name="visibilityType" value="ALL" />

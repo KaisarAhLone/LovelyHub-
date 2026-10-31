@@ -1,4 +1,4 @@
-package com.example.lovelyhub.ui.chats
+﻿package com.example.lovelyhub.ui.chats
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -97,6 +97,7 @@ class ChatViewModel(
         _isSendingMessage.value = true
         viewModelScope.launch {
             repository.sendMessage(receiverUid, text)
+            com.example.lovelyhub.data.repository.CommunicationEventRepository.recordInAppMessage(recipientUserId = receiverUid, listingType = "in_app_chat")
             _isSendingMessage.value = false
             onComplete()
         }

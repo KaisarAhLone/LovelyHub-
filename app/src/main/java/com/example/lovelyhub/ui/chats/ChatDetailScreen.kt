@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -73,6 +74,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.lovelyhub.ui.components.ListingImage
 import com.example.lovelyhub.ui.components.MapLocationHelper
+import com.example.lovelyhub.ui.theme.LovelyPurplePrimary
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -162,140 +164,133 @@ fun ChatDetailScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
             )
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .imePadding()
-                .navigationBarsPadding(),
-            color = Color.Transparent
-        ) {
-            Box(
+        },
+        bottomBar = {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFFDF2F8))
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E1E2D))
+                    .windowInsetsPadding(WindowInsets.ime)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(messages) { msg ->
-                            val isMe = msg.senderUid == currentUid
-                            val formattedTime = try {
-                                SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(msg.timestamp))
-                            } catch (_: Exception) {
-                                ""
-                            }
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    placeholder = { Text("Type a message...", color = Color.Gray, fontSize = 14.sp) },
+                    singleLine = true,
+                    enabled = !isSending,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
+                        focusedContainerColor = Color.White,
+                        focusedBorderColor = LovelyPurplePrimary,
+                        unfocusedBorderColor = Color.Transparent
+                    )
+                )
 
-                            if (msg.messageText.contains("NEW CAMPUS ORDER PLACED!")) {
-                                OrderCardBubble(
-                                    context = context,
-                                    rawText = msg.messageText,
-                                    formattedTime = formattedTime
-                                )
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(
-                                                RoundedCornerShape(
-                                                    topStart = 16.dp,
-                                                    topEnd = 16.dp,
-                                                    bottomStart = if (isMe) 16.dp else 2.dp,
-                                                    bottomEnd = if (isMe) 2.dp else 16.dp
-                                                )
-                                            )
-                                            .background(if (isMe) com.example.lovelyhub.ui.theme.LovelyPurplePrimary else Color.White)
-                                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = msg.messageText,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = if (isMe) Color.White else Color(0xFF1E1E2D)
-                                            )
+                Spacer(modifier = Modifier.width(8.dp))
 
-                                            Spacer(modifier = Modifier.height(2.dp))
-
-                                            Text(
-                                                text = formattedTime,
-                                                fontSize = 10.sp,
-                                                color = if (isMe) Color.White.copy(alpha = 0.7f) else Color.Gray,
-                                                modifier = Modifier.align(Alignment.End)
-                                            )
-                                        }
+                IconButton(
+                    onClick = {
+                        if (inputText.isNotBlank() && !isSending) {
+                            val textToSend = inputText
+                            inputText = ""
+                            viewModel.sendMessage(receiverUid, textToSend) {
+                                scope.launch {
+                                    if (messages.isNotEmpty()) {
+                                        listState.scrollToItem(messages.size - 1)
                                     }
                                 }
                             }
                         }
+                    },
+                    enabled = !isSending,
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(LovelyPurplePrimary)
+                ) {
+                    if (isSending) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                    } else {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFFDF2F8))
+                .padding(innerPadding)
+        ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(messages) { msg ->
+                    val isMe = msg.senderUid == currentUid
+                    val formattedTime = try {
+                        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(msg.timestamp))
+                    } catch (_: Exception) {
+                        ""
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF1E1E2D))
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = inputText,
-                            onValueChange = { inputText = it },
-                            placeholder = { Text("Type a message...", color = Color.Gray, fontSize = 14.sp) },
-                            singleLine = true,
-                            enabled = !isSending,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
-                                focusedContainerColor = Color.White,
-                                focusedBorderColor = com.example.lovelyhub.ui.theme.LovelyPurplePrimary,
-                                unfocusedBorderColor = Color.Transparent
-                            )
+                    if (msg.messageText.contains("NEW CAMPUS ORDER PLACED!")) {
+                        OrderCardBubble(
+                            context = context,
+                            rawText = msg.messageText,
+                            formattedTime = formattedTime
                         )
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        IconButton(
-                            onClick = {
-                                if (inputText.isNotBlank() && !isSending) {
-                                    val textToSend = inputText
-                                    inputText = ""
-                                    viewModel.sendMessage(receiverUid, textToSend) {
-                                        scope.launch {
-                                            if (messages.isNotEmpty()) {
-                                                listState.scrollToItem(messages.size - 1)
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = !isSending,
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(com.example.lovelyhub.ui.theme.LovelyPurplePrimary)
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
                         ) {
-                            if (isSending) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
-                            } else {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = "Send",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .clip(
+                                        RoundedCornerShape(
+                                            topStart = 16.dp,
+                                            topEnd = 16.dp,
+                                            bottomStart = if (isMe) 16.dp else 2.dp,
+                                            bottomEnd = if (isMe) 2.dp else 16.dp
+                                        )
+                                    )
+                                    .background(if (isMe) LovelyPurplePrimary else Color.White)
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = msg.messageText,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (isMe) Color.White else Color(0xFF1E1E2D)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    Text(
+                                        text = formattedTime,
+                                        fontSize = 10.sp,
+                                        color = if (isMe) Color.White.copy(alpha = 0.7f) else Color.Gray,
+                                        modifier = Modifier.align(Alignment.End)
+                                    )
+                                }
                             }
                         }
                     }

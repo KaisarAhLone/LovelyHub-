@@ -374,71 +374,74 @@ fun HomeScreen(
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(
-                containerColor = LovelyBottomNavBg,
-                tonalElevation = 10.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                val navItems = listOf(
-                    "Home" to Icons.Default.Home,
-                    "Add" to Icons.Default.AddBox,
-                    "Chats" to Icons.AutoMirrored.Filled.Chat,
-                    "Profile" to Icons.Default.Person
-                )
-
-                navItems.forEachIndexed { index, (label, icon) ->
-                    val isSelected = activeChatTarget == null && !showAboutScreen && selectedBottomNavIndex == index && selectedCategory == null && selectedListingDetail == null
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            activeChatTarget = null
-                            showAboutScreen = false
-                            selectedBottomNavIndex = index
-                            selectedCategory = null
-                            selectedListingDetail = null
-                        },
-                        icon = {
-                            Box {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                if (label == "Chats") {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .align(Alignment.TopEnd)
-                                            .offset(x = 2.dp, y = (-2).dp)
-                                            .clip(CircleShape)
-                                            .background(LovelyRedBadge)
-                                    )
-                                }
-                            }
-                        },
-                        label = {
-                            Text(
-                                text = label,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.White,
-                            selectedTextColor = LovelyPurpleLight,
-                            unselectedIconColor = LovelyNavInactive,
-                            unselectedTextColor = LovelyNavInactive,
-                            indicatorColor = LovelyNavActivePill
-                        )
+            if (activeChatTarget == null && selectedListingDetail == null && !showAboutScreen) {
+                NavigationBar(
+                    containerColor = LovelyBottomNavBg,
+                    tonalElevation = 10.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val navItems = listOf(
+                        "Home" to Icons.Default.Home,
+                        "Add" to Icons.Default.AddBox,
+                        "Chats" to Icons.AutoMirrored.Filled.Chat,
+                        "Profile" to Icons.Default.Person
                     )
+
+                    navItems.forEachIndexed { index, (label, icon) ->
+                        val isSelected = selectedBottomNavIndex == index && selectedCategory == null
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                activeChatTarget = null
+                                showAboutScreen = false
+                                selectedBottomNavIndex = index
+                                selectedCategory = null
+                                selectedListingDetail = null
+                            },
+                            icon = {
+                                Box {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = label,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    if (label == "Chats") {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .align(Alignment.TopEnd)
+                                                .offset(x = 2.dp, y = (-2).dp)
+                                                .clip(CircleShape)
+                                                .background(LovelyRedBadge)
+                                        )
+                                    }
+                                }
+                            },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color.White,
+                                selectedTextColor = LovelyPurpleLight,
+                                unselectedIconColor = LovelyNavInactive,
+                                unselectedTextColor = LovelyNavInactive,
+                                indicatorColor = LovelyNavActivePill
+                            )
+                        )
+                    }
                 }
             }
         }
     ) { innerPadding ->
+        val isFullScreenOverlay = activeChatTarget != null || selectedListingDetail != null || showAboutScreen
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding()),
+                .padding(bottom = if (isFullScreenOverlay) 0.dp else innerPadding.calculateBottomPadding()),
             color = LovelyBgLight
         ) {
             Box(modifier = Modifier.fillMaxSize()) {

@@ -1,4 +1,4 @@
-package com.example.lovelyhub.ui.auth
+﻿package com.example.lovelyhub.ui.auth
 
 import android.Manifest
 import android.app.TimePickerDialog
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
@@ -99,7 +101,8 @@ import java.util.Locale
 @Composable
 fun AuthScreen(
     viewModel: AuthViewModel,
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: () -> Unit,
+    onOpenOwnerPortal: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
@@ -206,6 +209,30 @@ fun AuthScreen(
                         .background(LovelyHeaderGradient),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Secret invisible hotspot in Top-Left Corner (as requested)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .size(70.dp)
+                            .clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                onOpenOwnerPortal()
+                            }
+                    )
+                    // Secret invisible hotspot in Top-Right Corner
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(70.dp)
+                            .clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                onOpenOwnerPortal()
+                            }
+                    )
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(16.dp)

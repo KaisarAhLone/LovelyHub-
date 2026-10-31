@@ -1,4 +1,4 @@
-package com.example.lovelyhub.ui.listings
+﻿package com.example.lovelyhub.ui.listings
 
 import android.Manifest
 import android.net.Uri
@@ -1318,7 +1318,9 @@ fun AddListingScreen(
                                                 extraNotes = ""
                                                 imageUri = null
                                                 itemImageUris = emptyList()
-                                                scope.launch { snackbarHostState.showSnackbar("Item added to Marketplace successfully!") }
+                                                val autoApprove = com.example.lovelyhub.data.repository.AdminRepository.getCachedAutoApprovalEnabled(context)
+                                                val successMsg = if (autoApprove) "Listing approved and published live!" else "Listing submitted for Owner Approval! It will appear once approved."
+                                                scope.launch { snackbarHostState.showSnackbar(successMsg) }
                                                 onSuccess(postedCat)
                                             } else {
                                                 scope.launch { snackbarHostState.showSnackbar(error) }

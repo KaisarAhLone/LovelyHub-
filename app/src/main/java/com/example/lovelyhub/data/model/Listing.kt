@@ -18,5 +18,10 @@ data class Listing(
     val isFavorite: Boolean = false,
     val menuItems: List<String> = emptyList(),
     val isShop: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val approvalStatus: String = "approved", // "pending", "approved", "rejected", "disabled"
+    val rejectionReason: String = "",
+    val isActive: Boolean = true,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val ownerName: String = ""
 )

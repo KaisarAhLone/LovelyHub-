@@ -1,4 +1,4 @@
-package com.example.lovelyhub.data.repository
+﻿package com.example.lovelyhub.data.repository
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -71,6 +71,7 @@ class ListingRepository {
 
         val allItems = (memoryListings + remoteItems)
             .distinctBy { if (it.id.isNotBlank()) it.id else "${it.title}_${it.createdAt}" }
+            .filter { (it.approvalStatus.equals("approved", ignoreCase = true) || it.approvalStatus.isBlank()) && it.isActive }
 
         val filtered = if (category.equals("Favorites", ignoreCase = true)) {
             allItems.filter { favoriteIds.contains(it.id) || it.isFavorite }
@@ -106,6 +107,7 @@ class ListingRepository {
 
         val allItems = (memoryListings + remoteItems)
             .distinctBy { if (it.id.isNotBlank()) it.id else "${it.title}_${it.createdAt}" }
+            .filter { (it.approvalStatus.equals("approved", ignoreCase = true) || it.approvalStatus.isBlank()) && it.isActive }
 
         return allItems
             .filter { it.ownerUid == uid }
@@ -119,6 +121,15 @@ class ListingRepository {
         } else {
             listing.imageUrl
         }
+
+        val isAutoApproved = try {
+            val doc = firestore.collection("adminSettings").document("configuration").get().await()
+            doc.getBoolean("autoApprovalEnabled") ?: false
+        } catch (_: Exception) {
+            context.getSharedPreferences("lovelyhub_admin_prefs", Context.MODE_PRIVATE).getBoolean("auto_approval_enabled", false)
+        }
+        val initialApprovalStatus = if (isAutoApproved) "approved" else "pending"
+        val initialIsActive = isAutoApproved
 
         val isBusinessCategory = listing.category.equals("Restaurants", ignoreCase = true) ||
                 listing.category.equals("Food", ignoreCase = true) ||
@@ -144,7 +155,10 @@ class ListingRepository {
                         ownerUid = uid,
                         imageUrl = encodedImage,
                         menuItems = listOf(dishEntry),
-                        isShop = true
+                        isShop = true,
+                        approvalStatus = initialApprovalStatus,
+                        isActive = initialIsActive,
+                        updatedAt = System.currentTimeMillis()
                     )
                     shopDocRef.set(newShop).await()
                     memoryListings.add(0, newShop)
@@ -162,7 +176,10 @@ class ListingRepository {
             val finalListing = listing.copy(
                 id = if (listing.id.isBlank()) docRef.id else listing.id,
                 imageUrl = encodedImage,
-                ownerUid = uid
+                ownerUid = uid,
+                approvalStatus = initialApprovalStatus,
+                isActive = initialIsActive,
+                updatedAt = System.currentTimeMillis()
             )
             memoryListings.add(0, finalListing)
             try {

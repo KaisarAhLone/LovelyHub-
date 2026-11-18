@@ -107,14 +107,12 @@ class LocalUserCache(private val context: Context) {
             .commit()
     }
 
-    fun hasAcceptedDisclaimer(uid: String = ""): Boolean {
-        val targetUid = uid.ifBlank { getCurrentUid() }
-        return prefs.getBoolean("accepted_disclaimer_$targetUid", false)
+    fun hasAcceptedDisclaimer(): Boolean {
+        return prefs.getBoolean("accepted_disclaimer_global_v1", false)
     }
 
-    fun setAcceptedDisclaimer(accepted: Boolean, uid: String = "") {
-        val targetUid = uid.ifBlank { getCurrentUid() }
-        prefs.edit().putBoolean("accepted_disclaimer_$targetUid", accepted).commit()
+    fun setAcceptedDisclaimer(accepted: Boolean) {
+        prefs.edit().putBoolean("accepted_disclaimer_global_v1", accepted).commit()
     }
 
     fun hasCompletedOnboarding(): Boolean {

@@ -169,13 +169,6 @@ fun HomeScreen(
     val currentUser = viewModel.currentUser
     val localUserCache = remember { LocalUserCache(context) }
 
-    LaunchedEffect(currentUser, userProfile) {
-        val uid = currentUser?.uid ?: ""
-        if (uid.isNotBlank() && !localUserCache.hasAcceptedDisclaimer(uid)) {
-            showSellerDisclaimerDialog = true
-        }
-    }
-
     val cachedLocalPhoto = remember(currentUser?.uid, userProfile?.photoUrl) {
         localUserCache.getProfilePhoto(currentUser?.uid ?: "")
     }

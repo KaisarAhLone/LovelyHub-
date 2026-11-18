@@ -151,7 +151,8 @@ class AuthViewModel(
         openTime: String = "09:00 AM",
         closeTime: String = "10:00 PM",
         is24Hours: Boolean = false,
-        imageUri: Uri? = null
+        imageUri: Uri? = null,
+        onComplete: (String?) -> Unit = {}
     ) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -173,9 +174,12 @@ class AuthViewModel(
                 .onSuccess { user ->
                     _authState.value = AuthState.Success(user)
                     loadUserProfile(user.uid, context)
+                    onComplete(null)
                 }
                 .onFailure { error ->
-                    _authState.value = AuthState.Error(error.localizedMessage ?: "Google Sign-In failed")
+                    val errMsg = error.localizedMessage ?: "Google Sign-In failed"
+                    _authState.value = AuthState.Error(errMsg)
+                    onComplete(errMsg)
                 }
         }
     }

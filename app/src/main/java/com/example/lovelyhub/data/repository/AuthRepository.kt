@@ -246,7 +246,7 @@ class AuthRepository(
                 } else {
                     if (!userDoc.exists()) {
                         auth.signOut()
-                        return Result.failure(Exception("No account found for '${user.email}'. Please use the Register tab to create an account."))
+                        return Result.failure(Exception("No account found for '${user.email}'. Switched to Register tab to create your account!"))
                     }
                 }
 
@@ -393,7 +393,7 @@ class AuthRepository(
 
         try {
             LocalUserCache(context).removeProfilePhoto(uid)
-            LocalUserCache(context).setAcceptedDisclaimer(false, uid)
+            LocalUserCache(context).setAcceptedDisclaimer(false)
         } catch (_: Exception) {}
 
         try {

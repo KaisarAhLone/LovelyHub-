@@ -182,6 +182,9 @@ fun AuthScreen(
             is AuthState.Error -> {
                 val msg = (authState as AuthState.Error).message
                 snackbarHostState.showSnackbar(msg)
+                if (msg.contains("No account found", ignoreCase = true) || msg.contains("Register tab", ignoreCase = true)) {
+                    selectedTabIndex = 1
+                }
                 viewModel.clearError()
             }
             else -> {}
@@ -361,7 +364,7 @@ fun AuthScreen(
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Upload Profile / Cover Photo * (Required)",
+                                            text = "Upload Profile Photo (Optional)",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = Color(0xFF673AB7)
@@ -391,13 +394,17 @@ fun AuthScreen(
                                     readOnly = true,
                                     label = { Text("Account Type / Role") },
                                     trailingIcon = {
-                                        IconButton(onClick = { isRoleDropdownExpanded = true }) {
-                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
-                                        }
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF673AB7))
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
                                 )
+
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable { isRoleDropdownExpanded = true }
+                                ) {}
 
                                 DropdownMenu(
                                     expanded = isRoleDropdownExpanded,
@@ -457,10 +464,6 @@ fun AuthScreen(
 
                                 Button(
                                     onClick = {
-                                        if (profileImageUri == null) {
-                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
-                                            return@Button
-                                        }
                                         if (name.isBlank()) {
                                             scope.launch { snackbarHostState.showSnackbar("Please enter your Full Name") }
                                             return@Button
@@ -522,10 +525,6 @@ fun AuthScreen(
                                 GoogleSignInButton(
                                     text = "Continue with Google",
                                     onClick = {
-                                        if (profileImageUri == null) {
-                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
-                                            return@GoogleSignInButton
-                                        }
                                         viewModel.signInWithGoogle(
                                             context = context,
                                             webClientId = webClientId,
@@ -533,7 +532,11 @@ fun AuthScreen(
                                             name = name,
                                             role = selectedRole.displayName,
                                             imageUri = profileImageUri
-                                        )
+                                        ) { err ->
+                                            if (err != null) {
+                                                scope.launch { snackbarHostState.showSnackbar(err) }
+                                            }
+                                        }
                                     }
                                 )
                             } else {
@@ -720,10 +723,6 @@ fun AuthScreen(
                                 GoogleSignInButton(
                                     text = "Register Shop with Google",
                                     onClick = {
-                                        if (profileImageUri == null) {
-                                            scope.launch { snackbarHostState.showSnackbar("Please upload a profile photo to complete registration!") }
-                                            return@GoogleSignInButton
-                                        }
                                         if (name.isBlank()) {
                                             scope.launch { snackbarHostState.showSnackbar("Please enter your Full Name") }
                                             return@GoogleSignInButton
@@ -854,7 +853,23 @@ fun AuthScreen(
 
                             GoogleSignInButton(
                                 onClick = {
-                                    viewModel.signInWithGoogle(context, webClientId)
+                                    viewModel.signInWithGoogle(
+                                        context = context,
+                                        webClientId = webClientId,
+                                        isRegistration = false
+                                    ) { err ->
+                                        if (err != null) {
+                                            selectedTabIndex = 1
+                                            scope.launch {
+                                                val promptMsg = if (err.contains("No account found", ignoreCase = true)) {
+                                                    err
+                                                } else {
+                                                    "No existing account found for this Google email. Switched to Register page to create account!"
+                                                }
+                                                snackbarHostState.showSnackbar(promptMsg)
+                                            }
+                                        }
+                                    }
                                 }
                             )
                         }

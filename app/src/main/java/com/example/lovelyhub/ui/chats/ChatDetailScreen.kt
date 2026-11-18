@@ -63,6 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -95,6 +97,7 @@ fun ChatDetailScreen(
     val messages by viewModel.messages.collectAsState()
     val isSending by viewModel.isSendingMessage.collectAsState()
     var inputText by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -180,10 +183,11 @@ fun ChatDetailScreen(
                     onValueChange = { inputText = it },
                     placeholder = { Text("Type a message...", color = Color.Gray, fontSize = 14.sp) },
                     singleLine = true,
-                    enabled = !isSending,
+                    enabled = true,
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp),
+                        .height(50.dp)
+                        .focusRequester(focusRequester),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
@@ -197,7 +201,7 @@ fun ChatDetailScreen(
 
                 IconButton(
                     onClick = {
-                        if (inputText.isNotBlank() && !isSending) {
+                        if (inputText.isNotBlank()) {
                             val textToSend = inputText
                             inputText = ""
                             viewModel.sendMessage(receiverUid, textToSend) {
@@ -207,9 +211,9 @@ fun ChatDetailScreen(
                                     }
                                 }
                             }
+                            focusRequester.requestFocus()
                         }
                     },
-                    enabled = !isSending,
                     modifier = Modifier
                         .size(46.dp)
                         .clip(CircleShape)

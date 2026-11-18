@@ -556,7 +556,7 @@ fun AuthScreen(
 
                                 OutlinedTextField(
                                     value = businessPhone,
-                                    onValueChange = { businessPhone = it },
+                                    onValueChange = { if (it.length <= 10 && it.all { char -> char.isDigit() }) businessPhone = it },
                                     label = { Text("Business Calling Phone Number") },
                                     leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF673AB7)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -569,7 +569,7 @@ fun AuthScreen(
 
                                 OutlinedTextField(
                                     value = businessWhatsApp,
-                                    onValueChange = { businessWhatsApp = it },
+                                    onValueChange = { if (it.length <= 10 && it.all { char -> char.isDigit() }) businessWhatsApp = it },
                                     label = { Text("WhatsApp Number for Orders (Optional)") },
                                     leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF2E7D32)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

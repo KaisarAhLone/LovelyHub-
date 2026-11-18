@@ -246,9 +246,13 @@ fun ListingListScreen(
     val isFavoritesCategory = category.equals("Favorites", ignoreCase = true)
     val isJobsCategory = category.equals("Jobs", ignoreCase = true)
     val isMarketplaceCategory = category.equals("Marketplace", ignoreCase = true)
+    val isShopCategory = category.equals("Restaurants", ignoreCase = true) || category.equals("Food", ignoreCase = true) || category.equals("Rooms", ignoreCase = true) || category.equals("Rentals", ignoreCase = true)
+
+    var selectedShopFilter by remember { mutableStateOf("All") }
 
     val favCategories = listOf("All", "Restaurants", "Rooms", "Rentals", "Jobs", "Marketplace", "Services")
     val jobFilterCategories = listOf("All Jobs", "Part-time", "Full-time", "On Campus", "Remote")
+    val shopFilterCategories = listOf("All", "Open Now", "Closed")
 
     val serviceCategories = remember {
         listOf(
@@ -868,6 +872,34 @@ fun ListingListScreen(
                                                 }
                                             }
 
+                                            if (isShopCategory) {
+                                                item {
+                                                    LazyRow(
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        items(shopFilterCategories) { shopCat ->
+                                                            val isSel = selectedShopFilter.equals(shopCat, ignoreCase = true)
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(18.dp))
+                                                                    .background(if (isSel) Color(0xFFEC4899) else Color.White)
+                                                                    .border(1.dp, if (isSel) Color(0xFFEC4899) else Color(0xFFFCE4EC), RoundedCornerShape(18.dp))
+                                                                    .clickable { selectedShopFilter = shopCat }
+                                                                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                                                            ) {
+                                                                Text(
+                                                                    text = shopCat,
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = if (isSel) Color.White else Color(0xFF1E1E2D)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
                                             val searchFilteredItems = items.filter { item ->
                                                 val matchesSearch = serviceSearchQuery.isBlank() ||
                                                         item.title.contains(serviceSearchQuery, ignoreCase = true) ||
@@ -878,7 +910,12 @@ fun ListingListScreen(
                                                         item.price.contains(selectedJobFilter, ignoreCase = true) ||
                                                         item.title.contains(selectedJobFilter, ignoreCase = true)
 
-                                                matchesSearch && matchesJobFilter
+                                                val shopTiming = calculateShopTimingStatus(item.openTime, item.closeTime, item.is24Hours)
+                                                val matchesShopFilter = !isShopCategory || selectedShopFilter.equals("All", ignoreCase = true) ||
+                                                        (selectedShopFilter.equals("Open Now", ignoreCase = true) && shopTiming.isOpen) ||
+                                                        (selectedShopFilter.equals("Closed", ignoreCase = true) && !shopTiming.isOpen)
+
+                                                matchesSearch && matchesJobFilter && matchesShopFilter
                                             }
 
                                             items(searchFilteredItems) { listing ->

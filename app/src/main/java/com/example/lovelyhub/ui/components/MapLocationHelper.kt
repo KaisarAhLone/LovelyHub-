@@ -57,30 +57,62 @@ object MapLocationHelper {
                         val addresses = geocoder.getFromLocation(lat, lng, 1)
                         if (!addresses.isNullOrEmpty()) {
                             val address = addresses[0]
-                            val areaName = address.subLocality ?: address.locality ?: "Law Gate, LPU"
-                            onResult("$areaName ($lat, $lng)")
+                            val subLoc = address.subLocality ?: ""
+                            val local = address.locality ?: ""
+                            val adminArea = address.adminArea ?: ""
+                            val fullLine = address.getAddressLine(0) ?: ""
+
+                            val formatted = when {
+                                subLoc.isNotBlank() && local.isNotBlank() -> "$subLoc, $local"
+                                local.isNotBlank() && adminArea.isNotBlank() -> "$local, $adminArea"
+                                fullLine.isNotBlank() -> fullLine
+                                else -> "Lat: $lat, Lng: $lng"
+                            }
+                            onResult(formatted)
                         } else {
-                            onResult("LPU Campus ($lat, $lng)")
+                            onResult("Lat: $lat, Lng: $lng")
                         }
                     } catch (_: Exception) {
-                        onResult("LPU Campus ($lat, $lng)")
+                        onResult("Lat: $lat, Lng: $lng")
                     }
                 } else {
                     fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                         if (lastLoc != null) {
-                            onResult("LPU Campus (${lastLoc.latitude}, ${lastLoc.longitude})")
+                            val lat = lastLoc.latitude
+                            val lng = lastLoc.longitude
+                            try {
+                                val geocoder = Geocoder(context, Locale.getDefault())
+                                @Suppress("DEPRECATION")
+                                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                if (!addresses.isNullOrEmpty()) {
+                                    val address = addresses[0]
+                                    val subLoc = address.subLocality ?: ""
+                                    val local = address.locality ?: ""
+                                    val fullLine = address.getAddressLine(0) ?: ""
+                                    val formatted = when {
+                                        subLoc.isNotBlank() && local.isNotBlank() -> "$subLoc, $local"
+                                        fullLine.isNotBlank() -> fullLine
+                                        else -> "Lat: $lat, Lng: $lng"
+                                    }
+                                    onResult(formatted)
+                                } else {
+                                    onResult("Lat: $lat, Lng: $lng")
+                                }
+                            } catch (_: Exception) {
+                                onResult("Lat: $lat, Lng: $lng")
+                            }
                         } else {
-                            onResult("Law Gate, LPU Campus")
+                            onResult("Please ensure GPS location is turned ON")
                         }
                     }.addOnFailureListener {
-                        onResult("Law Gate, LPU Campus")
+                        onResult("Please ensure GPS location is turned ON")
                     }
                 }
             }.addOnFailureListener {
-                onResult("Law Gate, LPU Campus")
+                onResult("Please ensure GPS location is turned ON")
             }
         } catch (_: Exception) {
-            onResult("Law Gate, LPU Campus")
+            onResult("Please ensure GPS location is turned ON")
         }
     }
 }
